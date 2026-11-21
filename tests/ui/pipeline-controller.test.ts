@@ -254,4 +254,27 @@ describe('pipeline controller buildPdf', () => {
     boom = true
     expect(await controller.buildPdf(2)).toEqual({ ok: false, reason: 'pdf-failed' })
   })
+
+  it('passes the watermark to render and buildPdf', async () => {
+    const seen: { render: unknown[]; pdf: unknown[] } = { render: [], pdf: [] }
+    const api = {
+      async render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number, _fl: unknown, wm: unknown) {
+        seen.render.push(wm)
+        return { ok: true, rev, face: fakeBitmap(1, 1) } as RenderResult
+      },
+      async buildPdf(req: { watermark: unknown }) {
+        seen.pdf.push(req.watermark)
+        return { ok: true, pdf: new Uint8Array() }
+      },
+      async clear() {},
+    } as unknown as ProcessingApi
+    const store = createSessionStore({ revokeUrl: () => {} })
+    const controller = createPipelineController({ api: { get: () => api, peek: () => api }, store })
+    for (const id of ['front', 'back'] as const) store.getState().setFace(id, { sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(1, 1) })
+    await controller.setWatermarkOn(true)
+    await controller.setWatermarkText('Copia')
+    expect(seen.render.at(-1)).toEqual({ text: 'Copia' })
+    await controller.buildPdf(2)
+    expect(seen.pdf).toEqual([{ text: 'Copia' }])
+  })
 })

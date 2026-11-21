@@ -1,7 +1,7 @@
 // In-memory session store (AD-8). No `persist`: nothing here ever touches storage.
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
-import { defaultQuad, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile } from '../core/index.ts'
+import { defaultQuad, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile, MAX_WATERMARK_CHARS } from '../core/index.ts'
 import type { FaceFilter, Quad, Rotation } from '../core/index.ts'
 import type { BitmapLike, FaceId, Size } from '../worker/api.ts'
 
@@ -26,6 +26,8 @@ export interface SessionState {
   blobUrls: string[]
   copies: 1 | 2
   filter: FaceFilter
+  watermarkOn: boolean
+  watermarkText: string
 }
 
 export interface SessionActions {
@@ -42,6 +44,10 @@ export interface SessionActions {
   setProfile(profileId: string): Partial<Record<FaceId, number>>
   /** Changes the print filter; returns the new rev of every affected face. */
   setFilter(filter: FaceFilter): Partial<Record<FaceId, number>>
+  /** Turns the watermark on/off; returns the new rev of every affected face. */
+  setWatermarkOn(on: boolean): Partial<Record<FaceId, number>>
+  /** Sets the watermark text (cut to 40 chars); returns the new rev of every affected face. */
+  setWatermarkText(text: string): Partial<Record<FaceId, number>>
   /** Stores a render if its rev is current; otherwise closes it. True when stored. */
   receiveRender(faceId: FaceId, rev: number, bitmap: BitmapLike): boolean
   trackBlobUrl(url: string): void
@@ -77,6 +83,14 @@ export function createSessionStore(deps: SessionDeps) {
       return rev
     }
 
+    const bumpAll = (): Partial<Record<FaceId, number>> => {
+      const revs: Partial<Record<FaceId, number>> = {}
+      for (const faceId of Object.keys(get().faces) as FaceId[]) {
+        revs[faceId] = patchFace(faceId, {}) ?? undefined
+      }
+      return revs
+    }
+
     return {
       rev: 0,
       profileId: DEFAULT_PROFILE_ID,
@@ -84,6 +98,8 @@ export function createSessionStore(deps: SessionDeps) {
       blobUrls: [],
       copies: 2,
       filter: 'color',
+      watermarkOn: false,
+      watermarkText: '',
 
       bindWorker(fn) {
         clearWorker = fn
@@ -153,6 +169,19 @@ export function createSessionStore(deps: SessionDeps) {
         return revs
       },
 
+      setWatermarkOn(on) {
+        if (get().watermarkOn === on) return {}
+        set({ watermarkOn: on })
+        return get().watermarkText.trim() ? bumpAll() : {}
+      },
+
+      setWatermarkText(text) {
+        const next = Array.from(text).slice(0, MAX_WATERMARK_CHARS).join('')
+        if (get().watermarkText === next) return {}
+        set({ watermarkText: next })
+        return get().watermarkOn ? bumpAll() : {}
+      },
+
       receiveRender(faceId, rev, bitmap) {
         const face = get().faces[faceId]
         if (!face || face.rev !== rev) {
@@ -192,7 +221,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color' })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '' })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

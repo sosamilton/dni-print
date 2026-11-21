@@ -68,7 +68,7 @@ describe('processing api', () => {
 
   it('reports render-failed when the raster backend throws', async () => {
     const imaging = createFakeImaging()
-    const api = createProcessingApi({ ...imaging, raster: { createBitmap: async () => { throw new Error('boom') } } })
+    const api = createProcessingApi({ ...imaging, raster: { ...imaging.raster, createBitmap: async () => { throw new Error('boom') } } })
     await api.ingest('front', blob('800x600'))
     expect(await api.render('front', defaultQuad(800, 600), 0, 'dni-ar', 5, 'color')).toEqual({ ok: false, rev: 5, reason: 'render-failed' })
   })
@@ -183,6 +183,33 @@ describe('processing api', () => {
     const text = new TextDecoder('latin1').decode(r.pdf)
     expect(text).toMatch(/\/ColorSpace\s*\/DeviceGray/)
     expect(text).not.toMatch(/\/ColorSpace\s*\/DeviceRGB/)
+  })
+
+  it('stamps the watermark in preview and PDF', async () => {
+    const imaging = createFakeImaging()
+    const api = createProcessingApi(imaging)
+    await api.ingest('front', new Blob(['800x500'], { type: 'image/png' }))
+    await api.ingest('back', new Blob(['800x500'], { type: 'image/png' }))
+    const quad = [{ x: 0, y: 0 }, { x: 800, y: 0 }, { x: 800, y: 500 }, { x: 0, y: 500 }] as never
+    const r = await api.render('front', quad, 0, 'dni-ar', 1, 'color', { text: 'Copia' })
+    expect(r.ok).toBe(true)
+    expect(imaging.stamps).toEqual(['Copia'])
+    const lay = layout(getProfile('dni-ar')!, 2, uniformMargins(10))
+    if (!lay.ok) throw new Error('layout')
+    const crop = { quad, rotation: 0 as const }
+    const pdf = await api.buildPdf({ profileId: 'dni-ar', placements: lay.placements, ruler: (lay as any).ruler, faces: { front: crop, back: crop }, filter: 'bn', watermark: { text: 'Copia' } })
+    expect(pdf.ok).toBe(true)
+    expect(imaging.stamps).toHaveLength(3)
+    const jpegCalls: number[] = []
+    const enc = imaging.encodeJpeg
+    imaging.encodeJpeg = async (px, q) => (jpegCalls.push(px.data[0]!), enc(px, q))
+    await api.buildPdf({ profileId: 'dni-ar', placements: lay.placements, ruler: lay.ruler, faces: { front: crop, back: crop }, filter: 'color', watermark: { text: 'Copia' } })
+    expect(jpegCalls).toEqual([77, 77]) // encoded pixels are the stamped ones
+    const bad = await api.buildPdf({ profileId: 'dni-ar', placements: lay.placements, ruler: lay.ruler, faces: { front: crop, back: crop }, filter: 'color', watermark: {} as never })
+    expect(bad).toEqual({ ok: false, reason: 'pdf-failed' })
+    const before = imaging.stamps.length
+    await api.buildPdf({ profileId: 'dni-ar', placements: lay.placements, ruler: lay.ruler, faces: { front: crop, back: crop }, filter: 'color', watermark: { text: '  ' } })
+    expect(imaging.stamps.length).toBe(before)
   })
 
   it('renders with a filter', async () => {

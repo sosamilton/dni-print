@@ -1,5 +1,5 @@
 // The only caller of the processing worker (AD-9). Tracks `rev` per face and drops stale answers.
-import { validateQuad } from '../core/index.ts'
+import { normalizeWatermark, validateQuad } from '../core/index.ts'
 import type { FaceFilter, Quad, Rotation } from '../core/index.ts'
 import type { DetectResult, FaceId, IngestResult, PdfResult, ProcessingApi } from '../worker/api.ts'
 import { sheetLayout } from './print-step-model.ts'
@@ -33,7 +33,7 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
     if (!face || face.rev !== rev) return
     let result
     try {
-      result = await api.get().render(faceId, face.quad, face.rotation, state.profileId, rev, state.filter)
+      result = await api.get().render(faceId, face.quad, face.rotation, state.profileId, rev, state.filter, normalizeWatermark(state.watermarkOn, state.watermarkText))
     } catch {
       return // worker crashed; the face keeps its last render
     }
@@ -101,8 +101,16 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
         (Object.keys(revs) as FaceId[]).map((faceId) => render(faceId, revs[faceId]!)),
       )
     },
+    async setWatermarkOn(on: boolean): Promise<void> {
+      const revs = store.getState().setWatermarkOn(on)
+      await Promise.all((Object.keys(revs) as FaceId[]).map((faceId) => render(faceId, revs[faceId]!)))
+    },
+    async setWatermarkText(text: string): Promise<void> {
+      const revs = store.getState().setWatermarkText(text)
+      await Promise.all((Object.keys(revs) as FaceId[]).map((faceId) => render(faceId, revs[faceId]!)))
+    },
     async buildPdf(copies: 1 | 2): Promise<PdfResult> {
-      const { faces, profileId, filter } = store.getState()
+      const { faces, profileId, filter, watermarkOn, watermarkText } = store.getState()
       const sheet = sheetLayout(profileId, copies)
       const { front, back } = faces
       if (!sheet.ok || !front || !back) return { ok: false, reason: 'pdf-failed' }
@@ -110,6 +118,7 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
         return await api.get().buildPdf({
           profileId,
           filter,
+          watermark: normalizeWatermark(watermarkOn, watermarkText),
           placements: sheet.placements,
           ruler: sheet.ruler,
           faces: {

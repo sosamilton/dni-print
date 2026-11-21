@@ -1,8 +1,8 @@
 // worker: contract between the UI and the processing worker (AD-17).
 // `ui` may import this file; the worker may import `core` and `engines`.
-import type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler } from '../core/index.ts'
+import type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler, Watermark } from '../core/index.ts'
 
-export type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler }
+export type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler, Watermark }
 
 export type FaceId = 'front' | 'back'
 
@@ -37,6 +37,7 @@ export interface PdfRequest {
   ruler: Ruler
   faces: Record<FaceId, FaceCrop>
   filter: FaceFilter
+  watermark?: Watermark | null
 }
 
 export type PdfResult =
@@ -56,6 +57,7 @@ export interface ProcessingApi {
     profileId: string,
     rev: number,
     filter: FaceFilter,
+    watermark?: Watermark | null,
   ): Promise<RenderResult>
   /** Rectifies both faces and assembles the exact-scale A4 PDF (JPEG 0.92 at the rectified px). */
   buildPdf(request: PdfRequest): Promise<PdfResult>

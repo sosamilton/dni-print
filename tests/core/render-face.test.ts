@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFilter, renderFace, type BitmapLike } from '../../src/core/render-face.ts'
+import { applyFilter, normalizeWatermark, renderFace, type BitmapLike } from '../../src/core/render-face.ts'
 
 const img = { width: 2, height: 1, data: new Uint8ClampedArray(8) }
 const raster = {
@@ -8,6 +8,7 @@ const raster = {
     height: p.height,
     close() {},
   }),
+  drawWatermark: async (p: { width: number; height: number; data: Uint8ClampedArray }) => p,
 }
 
 describe('renderFace', () => {
@@ -20,6 +21,41 @@ describe('renderFace', () => {
     expect(await renderFace(img, 'color', {} as never, raster)).toBeNull()
   })
 
+  it('normalizes the watermark', () => {
+    expect(normalizeWatermark(false, 'x')).toBeNull()
+    expect(normalizeWatermark(true, '   ')).toBeNull()
+    expect(normalizeWatermark(true, 'a'.repeat(60))?.text).toHaveLength(40)
+  })
+  it('null watermark is identical to the plain filter output and never stamps', async () => {
+    const src = { width: 2, height: 1, data: new Uint8ClampedArray([200, 40, 40, 255, 10, 20, 30, 255]) }
+    for (const filter of ['color', 'bn', 'ahorro'] as const) {
+      let seen: Uint8ClampedArray | null = null
+      let stamped = 0
+      const spy = {
+        createBitmap: async (p: { width: number; height: number; data: Uint8ClampedArray }) => ((seen = p.data), { width: p.width, height: p.height, close() {} }),
+        drawWatermark: async (p: never) => (stamped++, p),
+      }
+      await renderFace(src, filter, null, spy)
+      expect(Array.from(seen!)).toEqual(Array.from(applyFilter(src, filter).data))
+      expect(stamped).toBe(0)
+    }
+  })
+  it('stamps after the filter, in gray', async () => {
+    const order: string[] = []
+    const colorful = { width: 1, height: 1, data: new Uint8ClampedArray([200, 40, 40, 255]) }
+    const spy = {
+      createBitmap: async (p: { width: number; height: number }) => ({ width: p.width, height: p.height, close() {} }),
+      drawWatermark: async (p: { width: number; height: number; data: Uint8ClampedArray }, t: string) => {
+        order.push(t, `${p.data[0]}/${p.data[1]}`)
+        return p
+      },
+    }
+    await renderFace(colorful, 'bn', { text: 'Copia' }, spy)
+    expect(order[0]).toBe('Copia')
+    const [r, g] = order[1]!.split('/')
+    expect(r).toBe(g)
+  })
+
   describe('filters', () => {
     const colorful = {
       width: 3,
@@ -29,7 +65,7 @@ describe('renderFace', () => {
     const capture = async (filter: 'bn' | 'ahorro') => {
       let seen: { data: Uint8ClampedArray } | null = null
       const spy = { createBitmap: async (p: { width: number; height: number; data: Uint8ClampedArray }) => ((seen = p), { width: p.width, height: p.height, close() {} }) }
-      await renderFace(colorful, filter, null, spy)
+      await renderFace(colorful, filter, null, { ...spy, drawWatermark: async (p) => p })
       return seen!.data
     }
 

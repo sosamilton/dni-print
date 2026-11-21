@@ -1,5 +1,5 @@
 // Face rendering (AD-10): turns a rectified face into the final bitmap.
-// Filters live here; the watermark arrives in a later story.
+// Filter first, then the optional watermark.
 import type { PixelImage } from './geometry/types.ts'
 
 /** Minimal bitmap handle (ImageBitmap-compatible); `close` frees its memory. */
@@ -12,6 +12,30 @@ export interface BitmapLike {
 /** Raster operations needed by `renderFace`; the worker injects an OffscreenCanvas one. */
 export interface RasterBackend {
   createBitmap(pixels: PixelImage): Promise<BitmapLike>
+  /** Returns a copy of `pixels` with `text` stamped on it in gray (never colored). */
+  drawWatermark(pixels: PixelImage, text: string): Promise<PixelImage>
+}
+
+export interface Watermark {
+  text: string
+}
+
+export const MAX_WATERMARK_CHARS = 40
+
+/** Watermark for the UI inputs: null when off or when the text is blank; text is trimmed and cut to 40 chars. */
+export function normalizeWatermark(on: boolean, text: string): Watermark | null {
+  if (!on) return null
+  const clean = Array.from(text.trim()).slice(0, MAX_WATERMARK_CHARS).join('').trim()
+  return clean ? { text: clean } : null
+}
+
+export function isWatermark(value: unknown): value is Watermark {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Watermark).text === 'string' &&
+    (value as Watermark).text.trim() !== ''
+  )
 }
 
 export type FaceFilter = 'color' | 'bn' | 'ahorro'
@@ -50,13 +74,26 @@ export function applyFilter(pixels: PixelImage, filter: FaceFilter): PixelImage 
   return { width: pixels.width, height: pixels.height, data }
 }
 
+/** Filter, then watermark, on RGBA pixels. Shared by the preview and the PDF. */
+export async function stampFace(
+  rectified: PixelImage,
+  filter: FaceFilter,
+  watermark: Watermark | null,
+  raster: RasterBackend,
+): Promise<PixelImage> {
+  const filtered = applyFilter(rectified, filter)
+  if (!watermark) return filtered
+  return raster.drawWatermark(filtered, watermark.text.slice(0, MAX_WATERMARK_CHARS))
+}
+
 /** Renders a rectified face. Returns null for an unsupported filter or watermark. */
 export async function renderFace(
   rectified: PixelImage,
   filter: FaceFilter,
-  watermark: null,
+  watermark: Watermark | null,
   raster: RasterBackend,
 ): Promise<BitmapLike | null> {
-  if (!FACE_FILTERS.includes(filter) || watermark !== null) return null
-  return raster.createBitmap(applyFilter(rectified, filter))
+  if (!FACE_FILTERS.includes(filter)) return null
+  if (watermark !== null && !isWatermark(watermark)) return null
+  return raster.createBitmap(await stampFace(rectified, filter, watermark, raster))
 }

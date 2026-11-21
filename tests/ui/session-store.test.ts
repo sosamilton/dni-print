@@ -95,4 +95,30 @@ describe('session store filter', () => {
     s.getState().clearSession()
     expect(s.getState().filter).toBe('color')
   })
+
+  it('watermark is off by default, caps text, bumps revs only when effective, resets on clear', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    expect(s.getState().watermarkOn).toBe(false)
+    expect(s.getState().setWatermarkOn(true)).toEqual({})
+    s.getState().setWatermarkText('a'.repeat(60))
+    expect(s.getState().watermarkText).toHaveLength(40)
+    s.getState().clearSession()
+    expect(s.getState().watermarkOn).toBe(false)
+    expect(s.getState().watermarkText).toBe('')
+  })
+
+  it('returns revs for effective watermark changes and {} otherwise', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    s.getState().setFace('back', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    expect(s.getState().setWatermarkText('Copia')).toEqual({}) // off
+    expect(s.getState().setWatermarkText('Copia')).toEqual({}) // unchanged
+    const on = s.getState().setWatermarkOn(true)
+    expect(Object.keys(on).sort()).toEqual(['back', 'front'])
+    expect(on.front).toBe(s.getState().faces.front!.rev)
+    expect(Object.keys(s.getState().setWatermarkText('Otra'))).toHaveLength(2)
+    s.getState().setWatermarkText('')
+    s.getState().setWatermarkOn(false)
+    expect(s.getState().setWatermarkOn(true)).toEqual({}) // blank
+  })
 })

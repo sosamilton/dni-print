@@ -1,5 +1,5 @@
 import { pipeline } from './pipeline.ts'
-import { FACE_FILTERS } from '../core/index.ts'
+import { FACE_FILTERS, MAX_WATERMARK_CHARS } from '../core/index.ts'
 import { sheetLayout } from './print-step-model.ts'
 import { SheetPreview } from './sheet-preview.tsx'
 import { sessionStore, useSession } from './session-store.ts'
@@ -12,6 +12,8 @@ export function PrintStep({ error = false }: { error?: boolean }) {
   const copies = useSession((s) => s.copies)
   const profileId = useSession((s) => s.profileId)
   const filter = useSession((s) => s.filter)
+  const watermarkOn = useSession((s) => s.watermarkOn)
+  const watermarkText = useSession((s) => s.watermarkText)
   const faces = useSession((s) => s.faces)
   const sheet = sheetLayout(profileId, copies)
   const copy = strings.printStep
@@ -45,6 +47,26 @@ export function PrintStep({ error = false }: { error?: boolean }) {
           </button>
         ))}
       </div>
+      <label className="print-watermark-toggle">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={watermarkOn}
+          onChange={(e) => void pipeline.setWatermarkOn(e.target.checked)}
+        />
+        {copy.watermarkToggle}
+      </label>
+      {watermarkOn && (
+        <input
+          type="text"
+          className="print-watermark-field"
+          aria-label={copy.watermarkField}
+          placeholder={copy.watermarkPlaceholder}
+          maxLength={MAX_WATERMARK_CHARS}
+          value={watermarkText}
+          onChange={(e) => void pipeline.setWatermarkText(e.target.value)}
+        />
+      )}
       {sheet.ok && (
         <SheetPreview
           sheet={sheet}

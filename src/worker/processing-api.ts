@@ -1,5 +1,5 @@
 // Worker logic, testable without a DOM: all browser imaging goes through ImagingBackend.
-import { FACE_FILTERS, getProfile, grayPlane, rectify, renderFace, validateQuad } from '../core/index.ts'
+import { FACE_FILTERS, getProfile, isWatermark, normalizeWatermark, rectify, renderFace, stampFace, validateQuad } from '../core/index.ts'
 import type { PixelImage, Quad, RasterBackend } from '../core/index.ts'
 import { buildPdfDocument } from '../core/pdf.ts'
 import type { GrayFace, JpegFace } from '../core/pdf.ts'
@@ -97,7 +97,7 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
       }
     },
 
-    async render(faceId, quad, rotation, profileId, rev, filter) {
+    async render(faceId, quad, rotation, profileId, rev, filter, watermark) {
       const source = sources.get(faceId)
       if (!source) return { ok: false, rev, reason: 'no-source' }
       const profile = getProfile(profileId)
@@ -109,7 +109,7 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
       try {
         const rectified = rectify(imaging.readPixels(source), quad, rotation, profile)
         if (!rectified) return { ok: false, rev, reason: 'invalid-quad' }
-        const face = await renderFace(rectified, filter, null, imaging.raster)
+        const face = await renderFace(rectified, filter, watermark ?? null, imaging.raster)
         if (!face) return { ok: false, rev, reason: 'render-failed' }
         return { ok: true, rev, face }
       } catch {
@@ -121,6 +121,9 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
       const profile = getProfile(request.profileId)
       if (!profile) return { ok: false, reason: 'unknown-profile' }
       if (!FACE_FILTERS.includes(request.filter)) return { ok: false, reason: 'pdf-failed' }
+      const requested = request.watermark ?? null
+      if (requested !== null && !isWatermark(requested)) return { ok: false, reason: 'pdf-failed' }
+      const watermark = requested && normalizeWatermark(true, requested.text)
       try {
         const jpegs = {} as Record<FaceId, JpegFace | GrayFace>
         for (const faceId of ['front', 'back'] as const) {
@@ -130,10 +133,15 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
           if (!validateQuad(quad) || !ROTATIONS.includes(rotation)) return { ok: false, reason: 'invalid-quad' }
           const rectified = rectify(imaging.readPixels(source), quad, rotation, profile)
           if (!rectified) return { ok: false, reason: 'invalid-quad' }
-          jpegs[faceId] =
-            request.filter === 'color'
-              ? { jpeg: await imaging.encodeJpeg(rectified, PDF_JPEG_QUALITY) }
-              : { gray: { width: rectified.width, height: rectified.height, data: grayPlane(rectified, request.filter) } }
+          // Same filter-then-watermark path as the preview, so both match.
+          const stamped = await stampFace(rectified, request.filter, watermark, imaging.raster)
+          if (request.filter === 'color') {
+            jpegs[faceId] = { jpeg: await imaging.encodeJpeg(stamped, PDF_JPEG_QUALITY) }
+          } else {
+            const gray = new Uint8Array(stamped.width * stamped.height)
+            for (let i = 0; i < gray.length; i++) gray[i] = stamped.data[i * 4]!
+            jpegs[faceId] = { gray: { width: stamped.width, height: stamped.height, data: gray } }
+          }
         }
         const pdf = buildPdfDocument(request.placements, request.ruler, jpegs)
         return pdf ? { ok: true, pdf } : { ok: false, reason: 'pdf-failed' }

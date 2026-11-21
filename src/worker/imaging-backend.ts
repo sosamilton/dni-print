@@ -8,6 +8,23 @@ function context2d(width: number, height: number): OffscreenCanvasRenderingConte
   return ctx
 }
 
+const WATERMARK_FAMILY = 'Atkinson Hyperlegible Watermark'
+let watermarkFont: Promise<void> | null = null
+
+/** Registers the bundled Atkinson 700 inside the worker (no network beyond our own origin). */
+function loadWatermarkFont(): Promise<void> {
+  watermarkFont ??= (async () => {
+    const url = `${import.meta.env.BASE_URL}fonts/atkinson-hyperlegible-latin-700-normal.woff2`
+    const face = new FontFace(WATERMARK_FAMILY, `url(${url})`, { weight: '700' })
+    await face.load()
+    self.fonts.add(face)
+  })().catch((error) => {
+    watermarkFont = null
+    throw error
+  })
+  return watermarkFont
+}
+
 export function createImagingBackend(): ImagingBackend {
   return {
     async decode(blob) {
@@ -43,6 +60,29 @@ export function createImagingBackend(): ImagingBackend {
         const ctx = context2d(pixels.width, pixels.height)
         ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height), 0, 0)
         return createImageBitmap(ctx.canvas)
+      },
+      async drawWatermark(pixels, text) {
+        // A failed font load falls back to the generic sans-serif in the font stack.
+        await loadWatermarkFont().catch(() => {})
+        const { width, height } = pixels
+        const ctx = context2d(width, height)
+        ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.data), width, height), 0, 0)
+        // Diagonal, centered, sized so 40 chars still fit across the face; gray so bn/ahorro stay colorless.
+        const size = Math.max(12, Math.round(Math.min(width, height) * 0.09))
+        ctx.font = `700 ${size}px "${WATERMARK_FAMILY}", sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        const diagonal = Math.hypot(width, height)
+        const measured = ctx.measureText(text).width
+        if (measured > diagonal * 0.85) {
+          ctx.font = `700 ${Math.max(8, Math.floor((size * diagonal * 0.85) / measured))}px "${WATERMARK_FAMILY}", sans-serif`
+        }
+        ctx.translate(width / 2, height / 2)
+        ctx.rotate(-Math.atan2(height, width))
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.55)'
+        ctx.fillText(text, 0, 0)
+        const out = ctx.getImageData(0, 0, width, height)
+        return { width, height, data: out.data } satisfies PixelImage
       },
     },
   }

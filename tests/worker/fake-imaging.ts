@@ -16,11 +16,13 @@ export function fakeBitmap(width: number, height: number): FakeBitmap {
   }
 }
 
-export function createFakeImaging(): ImagingBackend & { made: FakeBitmap[] } {
+export function createFakeImaging(): ImagingBackend & { made: FakeBitmap[]; stamps: string[] } {
   const made: FakeBitmap[] = []
+  const stamps: string[] = []
   const track = (b: FakeBitmap) => (made.push(b), b)
   return {
     made,
+    stamps,
     async decode(blob) {
       const m = /^(\d+)x(\d+)$/.exec(await blob.text())
       return m ? track(fakeBitmap(Number(m[1]), Number(m[2]))) : null
@@ -39,7 +41,17 @@ export function createFakeImaging(): ImagingBackend & { made: FakeBitmap[] } {
     async encodeJpeg(p) {
       return fakeJpeg(p.width, p.height)
     },
-    raster: { async createBitmap(p) { return track(fakeBitmap(p.width, p.height)) } },
+    raster: {
+      async createBitmap(p) {
+        return track(fakeBitmap(p.width, p.height))
+      },
+      async drawWatermark(p, text) {
+        stamps.push(text)
+        const data = new Uint8ClampedArray(p.data)
+        data[0] = data[1] = data[2] = 77
+        return { width: p.width, height: p.height, data }
+      },
+    },
   }
 }
 

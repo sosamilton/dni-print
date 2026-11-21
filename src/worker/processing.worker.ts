@@ -24,8 +24,8 @@ const exposed: ProcessingApi = {
       ? Comlink.transfer(result, [result.previewBitmap as unknown as ImageBitmap])
       : result
   },
-  async render(faceId, quad, rotation, profileId, rev, filter) {
-    const result = await api.render(faceId, quad, rotation, profileId, rev, filter)
+  async render(faceId, quad, rotation, profileId, rev, filter, watermark) {
+    const result = await api.render(faceId, quad, rotation, profileId, rev, filter, watermark)
     return result.ok ? Comlink.transfer(result, [result.face as unknown as ImageBitmap]) : result
   },
 }
