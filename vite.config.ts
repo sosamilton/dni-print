@@ -17,6 +17,23 @@ export function stripCspInDev(): Plugin {
   }
 }
 
+/**
+ * scanic lazy-loads an ML chunk that points at cdn.jsdelivr.net. We only use the
+ * classical detector, so replace the chunk with an inert stub (no external URL in dist/).
+ */
+export function stubScanicMl(): Plugin {
+  return {
+    name: 'stub-scanic-ml',
+    enforce: 'pre',
+    load(id) {
+      if (/scanic-mlDetector\.js(\?.*)?$/.test(id)) {
+        return 'const off = async () => { throw new Error("scanic ML detector is disabled") }\nexport { off as detectDocumentMl, off as initializeMl }\n'
+      }
+      return null
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // `.env*` files fill in what the real environment does not set.
@@ -30,8 +47,8 @@ export default defineConfig(({ mode }) => {
     // Like GitHub Pages, answer missing files with 404 instead of the SPA index.html,
     // so the e2e guard sees assets requested outside the base. Navigation is state-only.
     appType: 'mpa',
-    plugins: [react(), stripCspInDev()],
-    worker: { format: 'es' },
+    plugins: [react(), stripCspInDev(), stubScanicMl()],
+    worker: { format: 'es', plugins: () => [stubScanicMl()] },
     define: {
       __COMMIT_SHA__: JSON.stringify(buildInfo.sha),
       __REPO_URL__: JSON.stringify(buildInfo.repoUrl),

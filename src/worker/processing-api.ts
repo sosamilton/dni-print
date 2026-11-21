@@ -1,11 +1,13 @@
 // Worker logic, testable without a DOM: all browser imaging goes through ImagingBackend.
 import { getProfile, rectify, renderFace, validateQuad } from '../core/index.ts'
-import type { PixelImage, RasterBackend } from '../core/index.ts'
+import type { PixelImage, Quad, RasterBackend } from '../core/index.ts'
 import { buildPdfDocument } from '../core/pdf.ts'
+import type { DetectionEngine } from '../engines/index.ts'
 import type { BitmapLike, FaceId, ProcessingApi } from './api.ts'
 
 export const MAX_SOURCE_SIDE_PX = 4096
 export const MAX_PREVIEW_SIDE_PX = 1024
+export const MAX_DETECT_SIDE_PX = 1024
 export const PDF_JPEG_QUALITY = 0.92
 
 export interface ImagingBackend {
@@ -21,11 +23,12 @@ export interface ImagingBackend {
 
 const ROTATIONS = [0, 90, 180, 270]
 
-export function createProcessingApi(imaging: ImagingBackend): ProcessingApi {
+export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionEngine): ProcessingApi {
   const sources = new Map<FaceId, BitmapLike>()
   // Latest ingest token per face; clear() and newer ingests invalidate in-flight ones.
   const latestIngest = new Map<FaceId, number>()
   let ingestCounter = 0
+  let engineReady: Promise<void> | null = null
 
   return {
     async ingest(faceId, blob) {
@@ -61,9 +64,36 @@ export function createProcessingApi(imaging: ImagingBackend): ProcessingApi {
       }
     },
 
-    // Documented stub: automatic detection arrives in Epic 3.
-    async detect() {
-      return { ok: false, reason: 'not-implemented' }
+    async detect(faceId) {
+      const source = sources.get(faceId)
+      if (!source) return { ok: false, reason: 'no-source' }
+      if (!engine) return { ok: false, reason: 'detect-failed' }
+      const token = latestIngest.get(faceId)
+      const stale = () => sources.get(faceId) !== source || latestIngest.get(faceId) !== token
+      let small: BitmapLike | null = null
+      try {
+        const ready = (engineReady ??= engine.init())
+        try {
+          await ready
+        } catch (error) {
+          if (engineReady === ready) engineReady = null // retry on the next call
+          throw error
+        }
+        if (stale()) return { ok: false, reason: 'superseded' }
+        small = await imaging.scaleTo(source, MAX_DETECT_SIDE_PX)
+        if (!small.width || !small.height) return { ok: false, reason: 'detect-failed' }
+        const quad = await engine.detect(imaging.readPixels(small))
+        if (stale()) return { ok: false, reason: 'superseded' }
+        if (!quad) return { ok: true, quad: null }
+        const kx = source.width / small.width
+        const ky = source.height / small.height
+        const scaled = quad.map((p) => ({ x: p.x * kx, y: p.y * ky })) as Quad
+        return { ok: true, quad: validateQuad(scaled) ? scaled : null }
+      } catch {
+        return stale() ? { ok: false, reason: 'superseded' } : { ok: false, reason: 'detect-failed' }
+      } finally {
+        small?.close()
+      }
     },
 
     async render(faceId, quad, rotation, profileId, rev) {

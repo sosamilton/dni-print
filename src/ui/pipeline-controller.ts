@@ -1,6 +1,6 @@
 // The only caller of the processing worker (AD-9). Tracks `rev` per face and drops stale answers.
 import type { Quad, Rotation } from '../core/index.ts'
-import type { FaceId, IngestResult, PdfResult, ProcessingApi } from '../worker/api.ts'
+import type { DetectResult, FaceId, IngestResult, PdfResult, ProcessingApi } from '../worker/api.ts'
 import { sheetLayout } from './print-step-model.ts'
 import { sessionStore } from './session-store.ts'
 import type { SessionStore } from './session-store.ts'
@@ -57,6 +57,13 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
       const rev = store.getState().setFace(faceId, result)
       await render(faceId, rev)
       return result
+    },
+    async detect(faceId: FaceId): Promise<DetectResult> {
+      try {
+        return await api.get().detect(faceId)
+      } catch {
+        return { ok: false, reason: 'detect-failed' }
+      }
     },
     async setQuad(faceId: FaceId, quad: Quad): Promise<void> {
       const rev = store.getState().setQuad(faceId, quad)

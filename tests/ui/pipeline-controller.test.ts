@@ -26,6 +26,17 @@ function setup() {
 const tick = () => new Promise((r) => setTimeout(r, 0))
 
 describe('pipeline controller', () => {
+  it('detect forwards the worker answer and captures a crash', async () => {
+    const ok = { ok: true, quad: null }
+    const mk = (detect: () => Promise<unknown>) =>
+      createPipelineController({
+        api: { get: () => ({ detect }) as unknown as ProcessingApi, peek: () => null },
+        store: createSessionStore({ revokeUrl: () => {} }),
+      })
+    expect(await mk(async () => ok).detect('front')).toEqual(ok)
+    expect(await mk(async () => { throw new Error('x') }).detect('front')).toEqual({ ok: false, reason: 'detect-failed' })
+  })
+
   it('drops a render answer whose rev is stale', async () => {
     const { store, controller, renders } = setup()
     const ingest = controller.ingest('front', new Blob(['x'], { type: 'image/png' }))

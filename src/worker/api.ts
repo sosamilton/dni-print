@@ -21,7 +21,9 @@ export type RenderResult =
   | { ok: true; rev: number; face: BitmapLike }
   | { ok: false; rev: number; reason: RenderFailure }
 
-export type NotImplemented = { ok: false; reason: 'not-implemented' }
+export type DetectResult =
+  | { ok: true; quad: Quad | null }
+  | { ok: false; reason: 'no-source' | 'superseded' | 'detect-failed' }
 
 export interface FaceCrop {
   quad: Quad
@@ -43,8 +45,8 @@ export type PdfResult =
 export interface ProcessingApi {
   /** Decodes the blob (EXIF-oriented, long side capped); the full-res bitmap stays in the worker. */
   ingest(faceId: FaceId, blob: Blob): Promise<IngestResult>
-  /** Stub until Epic 3 (automatic detection). */
-  detect(faceId: FaceId): Promise<NotImplemented>
+  /** Detects the document on a reduced copy; the quad is in px of the full-res source. Null quad: none found. */
+  detect(faceId: FaceId): Promise<DetectResult>
   /** Rectifies and renders a face in color. Always echoes `rev` so callers can drop stale answers. */
   render(
     faceId: FaceId,
