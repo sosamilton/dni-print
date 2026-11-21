@@ -50,6 +50,24 @@ Todos los textos visibles están en `src/ui/strings.es.ts`, en español rioplate
 - Los tokens de diseño (colores, tipografía, radios, espaciados y medidas de componentes) salen de `DESIGN.md` y viven como variables CSS en `src/ui/styles/tokens.css`, con los colores de modo oscuro bajo `prefers-color-scheme: dark`. En el resto del CSS, colores, fuentes, tamaños de letra, radios y longitudes salen solo de `var(--…)`; `tests/ui/design-tokens.test.ts` lo verifica.
 - Las fuentes (Familjen Grotesk, Atkinson Hyperlegible y JetBrains Mono) se sirven como `woff2` desde el propio sitio, en `public/fonts/`, bajo la licencia SIL Open Font License 1.1 (un `OFL-*.txt` por familia). No se carga nada desde CDNs ni Google Fonts.
 
+## Código fuente
+
+La licencia AGPL-3.0 pide ofrecer el código fuente de la versión que se sirve. Por eso el menú ⋮ de la app tiene un enlace "Código fuente" que apunta a `<URL del repo>/tree/<SHA del commit>`. El build calcula los dos valores (`scripts/build-info.ts`) y los inyecta en el JS:
+
+| Valor | Precedencia (gana el primero que exista y sea válido) |
+| --- | --- |
+| SHA del commit | `VITE_COMMIT_SHA` → `GITHUB_SHA` → `git rev-parse HEAD` → sin SHA |
+| URL del repo | `VITE_REPO_URL` → `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}` → remoto `origin` de git → sin URL |
+
+- El enlace usa el formato `/tree/<SHA>` de GitHub; en otros hosts puede no funcionar.
+- La URL se normaliza a `https://host/dueño/repo` (sin `.git` ni barra final; un remoto SSH `git@host:dueño/repo.git` se convierte a `https://`). Cualquier URL que no sea `https://` se descarta.
+- Sin SHA, el enlace apunta a la raíz del repo. Sin URL, el item "Código fuente" se muestra deshabilitado con "No disponible en esta versión"; el build no falla.
+- En GitHub Actions no hace falta configurar nada: las variables `GITHUB_*` ya están definidas. Para forzar valores en un build local:
+
+```bash
+VITE_REPO_URL=https://github.com/dueño/repo VITE_COMMIT_SHA=$(git rev-parse HEAD) npm run build
+```
+
 ## Fotos reales
 
 La carpeta `corpus/` es para fotos reales de documentos y está en `.gitignore`: **nunca se commitea**, porque el repositorio es público. Los tests usan solo imágenes sintéticas de `tests/fixtures/`.

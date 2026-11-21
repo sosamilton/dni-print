@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AppMenu } from './app-menu.tsx'
 import { strings } from './strings.es.ts'
 import { STEP_COUNT } from './wizard-steps.ts'
 import './wizard-layout.css'
@@ -33,6 +34,7 @@ export function WizardLayout({
               {strings.wizard.back}
             </button>
           )}
+          <AppMenu />
         </div>
         <div
           className="wizard-progress"

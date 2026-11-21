@@ -7,6 +7,22 @@ export const strings = {
     stepCounter: (step: number, total: number) => `Paso ${step} de ${total}`,
     progressLabel: 'Avance del asistente',
   },
+  menu: {
+    button: '⋮',
+    buttonLabel: 'Más opciones',
+    privacy: 'Cómo funciona y privacidad',
+    sourceCode: 'Código fuente',
+    sourceCodeUnavailable: 'No disponible en esta versión',
+    close: 'Cerrar',
+  },
+  privacyDialog: {
+    title: 'Cómo funciona y privacidad',
+    paragraphs: [
+      'Todo se procesa en tu dispositivo, dentro del navegador. No hay cuentas ni servidores.',
+      'Las fotos no se guardan ni se envían a ningún lado. Al cerrar la app, se borran.',
+      'DNI Print es software libre, con licencia AGPL-3.0. El código fuente está en el menú ⋮, en «Código fuente».',
+    ],
+  },
   steps: {
     load: {
       title: 'Cargá las dos caras de tu DNI',

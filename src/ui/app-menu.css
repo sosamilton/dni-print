@@ -1,0 +1,138 @@
+.app-menu {
+  position: relative;
+  margin-left: auto;
+  margin-right: calc(-1 * var(--spacing-2));
+}
+
+.app-menu-toggle {
+  min-width: var(--hit-area);
+  min-height: var(--hit-area);
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: var(--color-ink-primary);
+  font-family: var(--font-title-family);
+  font-size: var(--font-title-size);
+  font-weight: var(--font-title-weight);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.app-menu-toggle[aria-expanded='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.app-menu-list {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--margin-mobile));
+  margin: var(--spacing-1) 0 0;
+  padding: var(--spacing-1);
+  list-style: none;
+  border: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface-raised);
+}
+
+.app-menu-list[hidden] {
+  display: none;
+}
+
+.app-menu-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--hit-area);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: var(--color-ink-primary);
+  font-family: var(--font-label-family);
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  line-height: var(--font-label-line-height);
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.app-menu-item:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+}
+
+.app-menu-item:disabled {
+  color: var(--color-ink-secondary);
+  cursor: default;
+}
+
+.app-menu-item-note {
+  font-family: var(--font-body-family);
+  font-size: var(--font-label-size);
+  font-weight: var(--font-body-weight);
+}
+
+.privacy-dialog {
+  box-sizing: border-box;
+  width: calc(100% - 2 * var(--margin-mobile));
+  max-width: var(--column-max);
+  padding: var(--spacing-5);
+  border: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+  font-family: var(--font-body-family);
+  font-size: var(--font-body-size);
+  font-weight: var(--font-body-weight);
+  line-height: var(--font-body-line-height);
+  overflow-wrap: anywhere;
+}
+
+.privacy-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-ink-primary) 40%, transparent);
+}
+
+/* In dark mode ink-primary is light; dim with the dark surface instead. */
+@media (prefers-color-scheme: dark) {
+  .privacy-dialog::backdrop {
+    background: color-mix(in srgb, var(--color-surface-base) 75%, transparent);
+  }
+}
+
+.privacy-dialog-title {
+  margin: 0;
+  font-family: var(--font-title-family);
+  font-size: var(--font-title-size);
+  font-weight: var(--font-title-weight);
+  line-height: var(--font-title-line-height);
+}
+
+.privacy-dialog-text {
+  margin: var(--spacing-3) 0 0;
+}
+
+.privacy-dialog-close {
+  display: block;
+  width: 100%;
+  min-height: var(--button-min-height);
+  margin-top: var(--spacing-5);
+  padding: var(--button-padding);
+  border: 0;
+  border-radius: var(--rounded-lg);
+  background: var(--color-accent);
+  color: var(--color-surface-raised);
+  font-family: var(--font-button-family);
+  font-size: var(--font-button-size);
+  font-weight: var(--font-button-weight);
+  line-height: var(--font-button-line-height);
+  cursor: pointer;
+}

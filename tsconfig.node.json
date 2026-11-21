@@ -19,6 +19,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "tests"],
+  "include": ["vite.config.ts", "scripts", "tests", "src/ui/build-info.d.ts"],
   "exclude": ["tests/e2e"]
 }
