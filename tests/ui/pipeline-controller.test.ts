@@ -121,3 +121,63 @@ describe('pipeline controller', () => {
     expect(calls).toBe(1)
   })
 })
+
+describe('pipeline controller buildPdf', () => {
+  it('sends the layout placements for the chosen copies', async () => {
+    let request: any
+    const api = {
+      async ingest() {
+        return { ok: true, sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(10, 10) }
+      },
+      async render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number) {
+        return { ok: true, rev, face: fakeBitmap(1, 1) }
+      },
+      async buildPdf(r: unknown) {
+        request = r
+        return { ok: true, pdf: new Uint8Array([1]) }
+      },
+      async clear() {},
+    } as unknown as ProcessingApi
+    const store = createSessionStore({ revokeUrl: () => {} })
+    const controller = createPipelineController({ api: { get: () => api, peek: () => api }, store })
+    const blob = new Blob(['x'], { type: 'image/png' })
+    await controller.ingest('front', blob)
+    await controller.ingest('back', blob)
+    expect((await controller.buildPdf(2)).ok).toBe(true)
+    expect(request.placements).toHaveLength(4)
+    await controller.buildPdf(1)
+    expect(request.placements).toHaveLength(2)
+  })
+
+  it('sends each face its own crop and fails cleanly without faces or when the worker throws', async () => {
+    let request: any
+    let boom = false
+    const api = {
+      async ingest() {
+        return { ok: true, sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(10, 10) }
+      },
+      async render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number) {
+        return { ok: true, rev, face: fakeBitmap(1, 1) }
+      },
+      async buildPdf(r: unknown) {
+        if (boom) throw new Error('worker gone')
+        request = r
+        return { ok: true, pdf: new Uint8Array([1]) }
+      },
+      async clear() {},
+    } as unknown as ProcessingApi
+    const store = createSessionStore({ revokeUrl: () => {} })
+    const controller = createPipelineController({ api: { get: () => api, peek: () => api }, store })
+    expect(await controller.buildPdf(2)).toEqual({ ok: false, reason: 'pdf-failed' })
+    const blob = new Blob(['x'], { type: 'image/png' })
+    await controller.ingest('front', blob)
+    await controller.ingest('back', blob)
+    await controller.setRotation('back', 90)
+    await controller.buildPdf(2)
+    expect(request.profileId).toBe(store.getState().profileId)
+    expect(request.faces.front).toEqual({ quad: store.getState().faces.front!.quad, rotation: 0 })
+    expect(request.faces.back.rotation).toBe(90)
+    boom = true
+    expect(await controller.buildPdf(2)).toEqual({ ok: false, reason: 'pdf-failed' })
+  })
+})

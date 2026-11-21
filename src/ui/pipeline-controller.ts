@@ -1,6 +1,7 @@
 // The only caller of the processing worker (AD-9). Tracks `rev` per face and drops stale answers.
 import type { Quad, Rotation } from '../core/index.ts'
-import type { FaceId, IngestResult, ProcessingApi } from '../worker/api.ts'
+import type { FaceId, IngestResult, PdfResult, ProcessingApi } from '../worker/api.ts'
+import { sheetLayout } from './print-step-model.ts'
 import { sessionStore } from './session-store.ts'
 import type { SessionStore } from './session-store.ts'
 import type { StoreApi } from 'zustand/vanilla'
@@ -74,6 +75,25 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
       await Promise.all(
         (Object.keys(revs) as FaceId[]).map((faceId) => render(faceId, revs[faceId]!)),
       )
+    },
+    async buildPdf(copies: 1 | 2): Promise<PdfResult> {
+      const { faces, profileId } = store.getState()
+      const sheet = sheetLayout(profileId, copies)
+      const { front, back } = faces
+      if (!sheet.ok || !front || !back) return { ok: false, reason: 'pdf-failed' }
+      try {
+        return await api.get().buildPdf({
+          profileId,
+          placements: sheet.placements,
+          ruler: sheet.ruler,
+          faces: {
+            front: { quad: front.quad, rotation: front.rotation },
+            back: { quad: back.quad, rotation: back.rotation },
+          },
+        })
+      } catch {
+        return { ok: false, reason: 'pdf-failed' }
+      }
     },
     clearSession,
   }

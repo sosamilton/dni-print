@@ -22,6 +22,7 @@ export interface SessionState {
   profileId: string
   faces: Partial<Record<FaceId, FaceState>>
   blobUrls: string[]
+  copies: 1 | 2
 }
 
 export interface SessionActions {
@@ -37,6 +38,10 @@ export interface SessionActions {
   /** Stores a render if its rev is current; otherwise closes it. True when stored. */
   receiveRender(faceId: FaceId, rev: number, bitmap: BitmapLike): boolean
   trackBlobUrl(url: string): void
+  setCopies(copies: 1 | 2): void
+  /** Creates a tracked blob URL for the PDF; release it with `releaseUrl`. */
+  createPdfUrl(pdf: Uint8Array): string
+  releaseUrl(url: string): void
   clearSession(): void
 }
 
@@ -45,6 +50,7 @@ export type SessionStore = SessionState & SessionActions
 export interface SessionDeps {
   clearWorker?: () => void | Promise<void>
   revokeUrl: (url: string) => void
+  createUrl?: (blob: Blob) => string
 }
 
 export function createSessionStore(deps: SessionDeps) {
@@ -69,6 +75,7 @@ export function createSessionStore(deps: SessionDeps) {
       profileId: DEFAULT_PROFILE_ID,
       faces: {},
       blobUrls: [],
+      copies: 2,
 
       bindWorker(fn) {
         clearWorker = fn
@@ -136,6 +143,23 @@ export function createSessionStore(deps: SessionDeps) {
         set((s) => ({ blobUrls: [...s.blobUrls, url] }))
       },
 
+      setCopies(copies) {
+        set({ copies })
+      },
+
+      createPdfUrl(pdf) {
+        const make = deps.createUrl ?? ((blob: Blob) => URL.createObjectURL(blob))
+        const url = make(new Blob([pdf as unknown as ArrayBuffer], { type: 'application/pdf' }))
+        set((s) => ({ blobUrls: [...s.blobUrls, url] }))
+        return url
+      },
+
+      releaseUrl(url) {
+        if (!get().blobUrls.includes(url)) return
+        deps.revokeUrl(url)
+        set((s) => ({ blobUrls: s.blobUrls.filter((u) => u !== url) }))
+      },
+
       clearSession() {
         const { faces, blobUrls } = get()
         for (const url of blobUrls) deps.revokeUrl(url)
@@ -143,7 +167,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2 })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

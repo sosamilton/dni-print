@@ -7,7 +7,7 @@ import './app-menu.css'
 const SOURCE_CODE_URL = currentSourceCodeUrl()
 
 /** Header ⋮ menu as a disclosure: a toggle button plus a list of a button and a link. */
-export function AppMenu() {
+export function AppMenu({ onRestart }: { onRestart?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [privacyOpen, setPrivacyOpen] = useState(false)
   const containerRef = useRef(null as HTMLDivElement | null)
@@ -71,6 +71,20 @@ export function AppMenu() {
             {strings.menu.privacy}
           </button>
         </li>
+        {onRestart && (
+          <li>
+            <button
+              type="button"
+              className="app-menu-item"
+              onClick={() => {
+                closeMenuAndRefocus()
+                onRestart()
+              }}
+            >
+              {strings.menu.restart}
+            </button>
+          </li>
+        )}
         <li>
           <SourceCodeItem onSelect={closeMenuAndRefocus} />
         </li>

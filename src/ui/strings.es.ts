@@ -14,6 +14,7 @@ export const strings = {
     sourceCode: 'Código fuente',
     sourceCodeUnavailable: 'No disponible en esta versión',
     close: 'Cerrar',
+    restart: 'Empezar de nuevo',
   },
   privacyDialog: {
     title: 'Cómo funciona y privacidad',
@@ -54,6 +55,19 @@ export const strings = {
     invalid: 'Las esquinas se cruzan. Acomodalas en orden.',
     lowResolution: 'La foto tiene poca resolución. La copia puede verse borrosa.',
     magnifierLabel: 'Lupa',
+  },
+  printStep: {
+    copiesLabel: 'Copias',
+    copies: { 1: '1 copia', 2: '2 copias' },
+    previewLabel: 'Vista previa de la hoja A4',
+    rulerLabel: '100 mm',
+    notice: 'Al imprimir elegí Tamaño real o 100 %. Medí la regla: tiene que dar 10 cm.',
+    preparing: 'Preparando PDF…',
+    failed: 'No pudimos armar el PDF. Probá de nuevo.',
+  },
+  doneStep: {
+    instruction: 'Al imprimir elegí Tamaño real o 100 %. Después medí la regla: tiene que dar 10 cm.',
+    cleared: 'Listo, borramos todo.',
   },
   steps: {
     load: {

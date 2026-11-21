@@ -50,3 +50,20 @@ describe('session store', () => {
     expect(s.getState().rev).toBe(before)
   })
 })
+
+describe('session store copies and pdf urls', () => {
+  it('defaults to 2 copies, tracks and revokes pdf urls, resets on clear', () => {
+    const revoke = vi.fn()
+    const s = createSessionStore({ revokeUrl: revoke, createUrl: () => 'blob:x' })
+    expect(s.getState().copies).toBe(2)
+    s.getState().setCopies(1)
+    expect(s.getState().copies).toBe(1)
+    const url = s.getState().createPdfUrl(new Uint8Array([1]))
+    expect(s.getState().blobUrls).toEqual([url])
+    s.getState().releaseUrl(url)
+    expect(revoke).toHaveBeenCalledWith('blob:x')
+    expect(s.getState().blobUrls).toEqual([])
+    s.getState().clearSession()
+    expect(s.getState().copies).toBe(2)
+  })
+})

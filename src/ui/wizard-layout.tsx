@@ -13,6 +13,7 @@ export interface WizardLayoutProps {
   primaryLabel: string
   onPrimary: () => void
   primaryDisabled?: boolean
+  onRestart?: () => void
   children: ReactNode
 }
 
@@ -25,6 +26,7 @@ export function WizardLayout({
   primaryLabel,
   onPrimary,
   primaryDisabled = false,
+  onRestart,
   children,
 }: WizardLayoutProps) {
   return (
@@ -36,7 +38,7 @@ export function WizardLayout({
               {strings.wizard.back}
             </button>
           )}
-          <AppMenu />
+          <AppMenu onRestart={onRestart} />
         </div>
         <div
           className="wizard-progress"

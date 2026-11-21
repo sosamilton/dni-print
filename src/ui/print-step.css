@@ -1,0 +1,7 @@
+.print-step { display: flex; flex-direction: column; gap: var(--spacing-3); padding-bottom: var(--spacing-4); }
+.print-copies { display: flex; gap: var(--spacing-2); }
+.print-copies-option { flex: 1; min-height: var(--hit-area); border: var(--hairline) solid var(--color-accent); border-radius: var(--rounded-md); background: transparent; color: var(--color-accent); font-family: var(--font-label-family); font-size: var(--font-label-size); font-weight: var(--font-label-weight); cursor: pointer; }
+.print-copies-option[data-selected='true'] { background: var(--color-accent); color: var(--color-on-accent); }
+.sheet-preview { width: 100%; max-width: 70vw; height: auto; align-self: center; background: var(--color-on-accent); border: var(--hairline) solid var(--color-border-hairline); }
+.print-notice { margin: 0; color: var(--color-ink-secondary); }
+.print-error { margin: 0; padding: var(--spacing-2) var(--spacing-3); border: var(--hairline) solid var(--color-danger); border-radius: var(--rounded-md); color: var(--color-danger); font-weight: 700; }
