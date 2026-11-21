@@ -5,7 +5,6 @@ export const A4_WIDTH_MM = 210
 export const A4_HEIGHT_MM = 297
 export const MIN_MARGIN_MM = 5
 export const GAP_MM = 5
-export const ROW_GAP_MM = 10
 export const RULER_LENGTH_MM = 100
 /** Minimum free height below the last row for the ruler and its label. */
 export const RULER_MIN_STRIP_MM = 12
@@ -37,9 +36,30 @@ export interface Ruler {
   lengthMm: number
 }
 
+/** Horizontal cut guide across the sheet (2 copies): each half is one complete copy. */
+export interface CutLine {
+  yMm: number
+  x1Mm: number
+  x2Mm: number
+}
+
 export type LayoutResult =
-  | { ok: true; placements: Placement[]; ruler: Ruler }
+  | { ok: true; placements: Placement[]; ruler: Ruler; cutLine: CutLine | null }
   | { ok: false; reason: 'no-cabe' | 'margen-invalido' }
+
+function rowPlacements(profile: DocumentProfile, copy: number, leftMm: number, yMm: number): Placement[] {
+  const { widthMm, heightMm } = profile
+  return [
+    { face: 'front', copy, xMm: leftMm, yMm, widthMm, heightMm },
+    { face: 'back', copy, xMm: leftMm + widthMm + GAP_MM, yMm, widthMm, heightMm },
+  ]
+}
+
+/** Centers `size` in [lo, hi] (the half), then clamps into [min, max]; null if that range is empty. */
+function centeredWithin(lo: number, hi: number, size: number, min: number, max: number): number | null {
+  if (min > max) return null
+  return Math.min(max, Math.max(min, lo + (hi - lo - size) / 2))
+}
 
 export function layout(profile: DocumentProfile, copies: 1 | 2, margins: Margins): LayoutResult {
   const sides = [margins.topMm, margins.rightMm, margins.bottomMm, margins.leftMm]
@@ -49,32 +69,37 @@ export function layout(profile: DocumentProfile, copies: 1 | 2, margins: Margins
   if (copies !== 1 && copies !== 2) return { ok: false, reason: 'no-cabe' }
 
   const availableWidthMm = A4_WIDTH_MM - margins.leftMm - margins.rightMm
-  const availableHeightMm = A4_HEIGHT_MM - margins.topMm - margins.bottomMm
   const blockWidthMm = 2 * profile.widthMm + GAP_MM
-  const blockHeightMm = copies * profile.heightMm + (copies - 1) * ROW_GAP_MM
-  const stripMm = availableHeightMm - blockHeightMm
-  if (blockWidthMm > availableWidthMm || RULER_LENGTH_MM > availableWidthMm || stripMm < RULER_MIN_STRIP_MM) {
+  if (blockWidthMm > availableWidthMm || RULER_LENGTH_MM > availableWidthMm) {
     return { ok: false, reason: 'no-cabe' }
   }
-
   const leftMm = margins.leftMm + (availableWidthMm - blockWidthMm) / 2
-  const placements: Placement[] = []
-  for (let copy = 0; copy < copies; copy++) {
-    const yMm = margins.topMm + copy * (profile.heightMm + ROW_GAP_MM)
-    placements.push({ face: 'front', copy, xMm: leftMm, yMm, widthMm: profile.widthMm, heightMm: profile.heightMm })
-    placements.push({
-      face: 'back',
-      copy,
-      xMm: leftMm + profile.widthMm + GAP_MM,
-      yMm,
-      widthMm: profile.widthMm,
-      heightMm: profile.heightMm,
-    })
+  const rulerXMm = margins.leftMm + (availableWidthMm - RULER_LENGTH_MM) / 2
+  const bottomLimitMm = A4_HEIGHT_MM - margins.bottomMm
+
+  if (copies === 1) {
+    const rowBottomMm = margins.topMm + profile.heightMm
+    const stripMm = bottomLimitMm - rowBottomMm
+    if (stripMm < RULER_MIN_STRIP_MM) return { ok: false, reason: 'no-cabe' }
+    return {
+      ok: true,
+      placements: rowPlacements(profile, 0, leftMm, margins.topMm),
+      ruler: { xMm: rulerXMm, yMm: rowBottomMm + stripMm / 2, lengthMm: RULER_LENGTH_MM },
+      cutLine: null,
+    }
   }
-  const ruler: Ruler = {
-    xMm: margins.leftMm + (availableWidthMm - RULER_LENGTH_MM) / 2,
-    yMm: margins.topMm + blockHeightMm + stripMm / 2,
-    lengthMm: RULER_LENGTH_MM,
+
+  // 2 copies: each copy centered in its half of the sheet; the ruler goes under copy 1.
+  const h = profile.heightMm
+  const halfMm = A4_HEIGHT_MM / 2
+  const y0 = centeredWithin(0, halfMm, h, margins.topMm, halfMm - h)
+  const y1 = centeredWithin(halfMm, A4_HEIGHT_MM, h, halfMm, bottomLimitMm - RULER_MIN_STRIP_MM - h)
+  if (y0 === null || y1 === null) return { ok: false, reason: 'no-cabe' }
+  const copy1BottomMm = y1 + h
+  return {
+    ok: true,
+    placements: [...rowPlacements(profile, 0, leftMm, y0), ...rowPlacements(profile, 1, leftMm, y1)],
+    ruler: { xMm: rulerXMm, yMm: (copy1BottomMm + bottomLimitMm) / 2, lengthMm: RULER_LENGTH_MM },
+    cutLine: { yMm: halfMm, x1Mm: margins.leftMm, x2Mm: A4_WIDTH_MM - margins.rightMm },
   }
-  return { ok: true, placements, ruler }
 }

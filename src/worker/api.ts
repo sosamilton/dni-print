@@ -1,8 +1,8 @@
 // worker: contract between the UI and the processing worker (AD-17).
 // `ui` may import this file; the worker may import `core` and `engines`.
-import type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler, Watermark } from '../core/index.ts'
+import type { BitmapLike, CutLine, FaceFilter, Placement, Quad, Rotation, Ruler, Watermark } from '../core/index.ts'
 
-export type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler, Watermark }
+export type { BitmapLike, CutLine, FaceFilter, Placement, Quad, Rotation, Ruler, Watermark }
 
 export type FaceId = 'front' | 'back'
 
@@ -30,11 +30,12 @@ export interface FaceCrop {
   rotation: Rotation
 }
 
-/** `placements` and `ruler` come from `layout()` on the main thread; the worker never recomputes them. */
+/** `placements`, `ruler` and `cutLine` come from `layout()` on the main thread; the worker never recomputes them. */
 export interface PdfRequest {
   profileId: string
   placements: Placement[]
   ruler: Ruler
+  cutLine: CutLine | null
   faces: Record<FaceId, FaceCrop>
   filter: FaceFilter
   watermark?: Watermark | null

@@ -121,6 +121,7 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
           watermark: normalizeWatermark(watermarkOn, watermarkText),
           placements: sheet.placements,
           ruler: sheet.ruler,
+          cutLine: sheet.cutLine,
           faces: {
             front: { quad: front.quad, rotation: front.rotation },
             back: { quad: back.quad, rotation: back.rotation },

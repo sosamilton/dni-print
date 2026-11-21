@@ -1,9 +1,11 @@
 // PDF assembly (AD-3, AD-6): exact-scale A4 sheet from a layout result and JPEG faces.
 import { jsPDF } from 'jspdf'
 import { encodeGrayPng } from './gray-png.ts'
-import type { Placement, Ruler } from './layout.ts'
+import type { CutLine, Placement, Ruler } from './layout.ts'
 
 export const RULER_LABEL = '100 mm'
+/** Same text as `strings.printStep.cutLabel` (core does not import ui). */
+export const CUT_LABEL = 'Cortar aquí'
 const TICK_MM = 2
 
 export interface JpegFace {
@@ -20,6 +22,7 @@ export interface GrayFace {
 export function buildPdfDocument(
   placements: readonly Placement[],
   ruler: Ruler,
+  cutLine: CutLine | null,
   faces: Record<'front' | 'back', JpegFace | GrayFace>,
 ): Uint8Array | null {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
@@ -43,5 +46,12 @@ export function buildPdfDocument(
   doc.line(x2, ruler.yMm - TICK_MM, x2, ruler.yMm + TICK_MM)
   doc.setFontSize(9)
   doc.text(RULER_LABEL, ruler.xMm + ruler.lengthMm / 2, ruler.yMm - TICK_MM - 1, { align: 'center' })
+  if (cutLine) {
+    doc.setLineDashPattern([2, 1.5], 0)
+    doc.line(cutLine.x1Mm, cutLine.yMm, cutLine.x2Mm, cutLine.yMm)
+    doc.setLineDashPattern([], 0)
+    doc.setFontSize(8)
+    doc.text(CUT_LABEL, cutLine.x1Mm, cutLine.yMm - 1)
+  }
   return new Uint8Array(doc.output('arraybuffer'))
 }

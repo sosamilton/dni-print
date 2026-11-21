@@ -143,7 +143,7 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
             jpegs[faceId] = { gray: { width: stamped.width, height: stamped.height, data: gray } }
           }
         }
-        const pdf = buildPdfDocument(request.placements, request.ruler, jpegs)
+        const pdf = buildPdfDocument(request.placements, request.ruler, request.cutLine, jpegs)
         return pdf ? { ok: true, pdf } : { ok: false, reason: 'pdf-failed' }
       } catch {
         return { ok: false, reason: 'pdf-failed' }

@@ -35,7 +35,7 @@ export function SheetPreview({
   marginMm: number
   label?: string
 }) {
-  const { placements, ruler } = sheet
+  const { placements, ruler, cutLine } = sheet
   return (
     <svg
       className="sheet-preview"
@@ -73,6 +73,22 @@ export function SheetPreview({
       <text x={ruler.xMm + ruler.lengthMm / 2} y={ruler.yMm - 3} fontSize={5} textAnchor="middle" fill="#2a3640">
         {strings.printStep.rulerLabel}
       </text>
+      {cutLine && (
+        <g data-testid="cut-line">
+          <line
+            x1={cutLine.x1Mm}
+            x2={cutLine.x2Mm}
+            y1={cutLine.yMm}
+            y2={cutLine.yMm}
+            stroke="#000000"
+            strokeWidth={0.3}
+            strokeDasharray="2 1.5"
+          />
+          <text x={cutLine.x1Mm} y={cutLine.yMm - 1} fontSize={4} fill="#2a3640">
+            {strings.printStep.cutLabel}
+          </text>
+        </g>
+      )}
     </svg>
   )
 }

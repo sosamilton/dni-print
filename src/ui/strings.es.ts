@@ -92,6 +92,7 @@ export const strings = {
     watermarkField: 'Texto de la marca de agua',
     watermarkPlaceholder: 'Copia para trámite',
     rulerLabel: '100 mm',
+    cutLabel: 'Cortar aquí',
     notice: 'Al imprimir elegí Tamaño real o 100 %. Medí la regla: tiene que dar 10 cm.',
     preparing: 'Preparando PDF…',
     failed: 'No pudimos armar el PDF. Probá de nuevo.',
