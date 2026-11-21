@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Quad } from '../../src/core/index.ts'
 import { createSessionStore } from '../../src/ui/session-store.ts'
@@ -120,5 +122,33 @@ describe('session store filter', () => {
     s.getState().setWatermarkText('')
     s.getState().setWatermarkOn(false)
     expect(s.getState().setWatermarkOn(true)).toEqual({}) // blank
+  })
+
+  it('revokes every blob URL on clearSession', () => {
+    const revoked: string[] = []
+    let n = 0
+    const s = createSessionStore({ revokeUrl: (u) => revoked.push(u), createUrl: () => `blob:test/${n++}` })
+    const a = s.getState().createPdfUrl(new Uint8Array([1]))
+    const b = s.getState().createPdfUrl(new Uint8Array([2]))
+    s.getState().trackBlobUrl('blob:test/extra')
+    s.getState().clearSession()
+    expect(revoked.sort()).toEqual([a, b, 'blob:test/extra'].sort())
+    expect(s.getState().blobUrls).toEqual([])
+  })
+
+  it('no src file uses persist or zustand/middleware, and only the store creates blob URLs', () => {
+    const srcDir = join(import.meta.dirname, '..', '..', 'src')
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(join(dir, e.name)) : /\.(m|c)?(t|j)sx?$/.test(e.name) ? [join(dir, e.name)] : [],
+      )
+    const files = walk(srcDir)
+    expect(files.length).toBeGreaterThan(10)
+    for (const f of files) {
+      const text = readFileSync(f, 'utf8')
+      expect(text, f).not.toMatch(/zustand\/middleware/)
+      expect(text, f).not.toMatch(/\bpersist\b\s*[(,}]/)
+      if (!f.endsWith('session-store.ts')) expect(text, f).not.toMatch(/createObjectURL/)
+    }
   })
 })
