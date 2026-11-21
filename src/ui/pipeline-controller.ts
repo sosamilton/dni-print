@@ -110,8 +110,8 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
       await Promise.all((Object.keys(revs) as FaceId[]).map((faceId) => render(faceId, revs[faceId]!)))
     },
     async buildPdf(copies: 1 | 2): Promise<PdfResult> {
-      const { faces, profileId, filter, watermarkOn, watermarkText } = store.getState()
-      const sheet = sheetLayout(profileId, copies)
+      const { faces, profileId, filter, watermarkOn, watermarkText, marginMm } = store.getState()
+      const sheet = sheetLayout(profileId, copies, marginMm)
       const { front, back } = faces
       if (!sheet.ok || !front || !back) return { ok: false, reason: 'pdf-failed' }
       try {

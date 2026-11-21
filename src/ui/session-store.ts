@@ -2,6 +2,7 @@
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 import { defaultQuad, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile, MAX_WATERMARK_CHARS } from '../core/index.ts'
+import { clampMargin, DEFAULT_MARGIN_MM } from './print-step-model.ts'
 import type { FaceFilter, Quad, Rotation } from '../core/index.ts'
 import type { BitmapLike, FaceId, Size } from '../worker/api.ts'
 
@@ -28,6 +29,8 @@ export interface SessionState {
   filter: FaceFilter
   watermarkOn: boolean
   watermarkText: string
+  /** Uniform sheet margin in mm (5–20). */
+  marginMm: number
 }
 
 export interface SessionActions {
@@ -48,6 +51,8 @@ export interface SessionActions {
   setWatermarkOn(on: boolean): Partial<Record<FaceId, number>>
   /** Sets the watermark text (cut to 40 chars); returns the new rev of every affected face. */
   setWatermarkText(text: string): Partial<Record<FaceId, number>>
+  /** Sets the sheet margin (clamped to 5–20 mm). Layout-only: no re-render needed. */
+  setMarginMm(mm: number): void
   /** Stores a render if its rev is current; otherwise closes it. True when stored. */
   receiveRender(faceId: FaceId, rev: number, bitmap: BitmapLike): boolean
   trackBlobUrl(url: string): void
@@ -100,6 +105,7 @@ export function createSessionStore(deps: SessionDeps) {
       filter: 'color',
       watermarkOn: false,
       watermarkText: '',
+      marginMm: DEFAULT_MARGIN_MM,
 
       bindWorker(fn) {
         clearWorker = fn
@@ -197,6 +203,10 @@ export function createSessionStore(deps: SessionDeps) {
         set((s) => ({ blobUrls: [...s.blobUrls, url] }))
       },
 
+      setMarginMm(mm) {
+        set({ marginMm: clampMargin(mm) })
+      },
+
       setCopies(copies) {
         set({ copies })
       },
@@ -221,7 +231,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '' })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

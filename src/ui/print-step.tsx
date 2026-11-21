@@ -1,6 +1,6 @@
 import { pipeline } from './pipeline.ts'
-import { FACE_FILTERS, MAX_WATERMARK_CHARS } from '../core/index.ts'
-import { sheetLayout } from './print-step-model.ts'
+import { FACE_FILTERS, MAX_WATERMARK_CHARS, normalizeWatermark } from '../core/index.ts'
+import { maxMarginMm, MIN_MARGIN_MM, previewDescription, sheetLayout } from './print-step-model.ts'
 import { SheetPreview } from './sheet-preview.tsx'
 import { sessionStore, useSession } from './session-store.ts'
 import { strings } from './strings.es.ts'
@@ -15,7 +15,9 @@ export function PrintStep({ error = false }: { error?: boolean }) {
   const watermarkOn = useSession((s) => s.watermarkOn)
   const watermarkText = useSession((s) => s.watermarkText)
   const faces = useSession((s) => s.faces)
-  const sheet = sheetLayout(profileId, copies)
+  const marginMm = useSession((s) => s.marginMm)
+  const sheet = sheetLayout(profileId, copies, marginMm)
+  const maxMargin = maxMarginMm(profileId, copies)
   const copy = strings.printStep
   return (
     <div className="print-step">
@@ -67,9 +69,31 @@ export function PrintStep({ error = false }: { error?: boolean }) {
           onChange={(e) => void pipeline.setWatermarkText(e.target.value)}
         />
       )}
+      <details className="print-more">
+        <summary>{copy.moreOptions}</summary>
+        <label className="print-margin">
+          {copy.marginLabel}: <output>{copy.marginValue(marginMm)}</output>
+          <input
+            type="range"
+            min={MIN_MARGIN_MM}
+            max={maxMargin}
+            step={1}
+            value={Math.min(marginMm, maxMargin)}
+            aria-valuetext={copy.marginValue(marginMm)}
+            onChange={(e) => sessionStore.getState().setMarginMm(Number(e.target.value))}
+          />
+        </label>
+      </details>
+      {!sheet.ok && (
+        <p className="print-error" role="alert">
+          {copy.noFit(copies)}
+        </p>
+      )}
       {sheet.ok && (
         <SheetPreview
           sheet={sheet}
+          marginMm={marginMm}
+          label={previewDescription(copies, filter, normalizeWatermark(watermarkOn, watermarkText) !== null)}
           rendered={{ front: faces.front?.rendered ?? null, back: faces.back?.rendered ?? null }}
         />
       )}

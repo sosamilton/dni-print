@@ -1,7 +1,6 @@
 import { A4_HEIGHT_MM, A4_WIDTH_MM } from '../core/index.ts'
 import type { BitmapLike, LayoutResult } from '../core/index.ts'
 import { BitmapCanvas } from './bitmap-canvas.tsx'
-import { SHEET_MARGIN_MM } from './print-step-model.ts'
 import { strings } from './strings.es.ts'
 
 type Sheet = Extract<LayoutResult, { ok: true }>
@@ -25,21 +24,31 @@ function Placeholder({ p }: { p: Sheet['placements'][number] }) {
  * A4 preview drawn from the same `layout` result that goes to `buildPdf`. Always white.
  * `rendered` is the (already filtered) `renderFace` output per face; a placeholder shows while it is missing.
  */
-export function SheetPreview({ sheet, rendered }: { sheet: Sheet; rendered?: RenderedFaces }) {
+export function SheetPreview({
+  sheet,
+  rendered,
+  marginMm,
+  label = strings.printStep.previewLabel,
+}: {
+  sheet: Sheet
+  rendered?: RenderedFaces
+  marginMm: number
+  label?: string
+}) {
   const { placements, ruler } = sheet
   return (
     <svg
       className="sheet-preview"
       viewBox={`0 0 ${A4_WIDTH_MM} ${A4_HEIGHT_MM}`}
       role="img"
-      aria-label={strings.printStep.previewLabel}
+      aria-label={label}
     >
       <rect width={A4_WIDTH_MM} height={A4_HEIGHT_MM} fill="#ffffff" />
       <rect
-        x={SHEET_MARGIN_MM}
-        y={SHEET_MARGIN_MM}
-        width={A4_WIDTH_MM - 2 * SHEET_MARGIN_MM}
-        height={A4_HEIGHT_MM - 2 * SHEET_MARGIN_MM}
+        x={marginMm}
+        y={marginMm}
+        width={A4_WIDTH_MM - 2 * marginMm}
+        height={A4_HEIGHT_MM - 2 * marginMm}
         fill="none"
         stroke="#b0b8c4"
         strokeWidth={0.3}

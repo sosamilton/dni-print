@@ -221,6 +221,11 @@ describe('pipeline controller buildPdf', () => {
     expect(request.placements).toHaveLength(4)
     await controller.buildPdf(1)
     expect(request.placements).toHaveLength(2)
+    store.getState().setMarginMm(16)
+    await controller.buildPdf(2)
+    expect(Math.min(...request.placements.map((p: { yMm: number }) => p.yMm))).toBe(16)
+    store.getState().setMarginMm(20) // 2 copies no longer fit
+    expect(await controller.buildPdf(2)).toEqual({ ok: false, reason: 'pdf-failed' })
   })
 
   it('sends each face its own crop and fails cleanly without faces or when the worker throws', async () => {

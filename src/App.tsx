@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { validateQuad } from './core/index.ts'
 import { pipeline } from './ui/pipeline.ts'
+import { sheetLayout } from './ui/print-step-model.ts'
 import { canContinue } from './ui/load-step-model.ts'
 import { sessionStore, useSession } from './ui/session-store.ts'
 import { strings } from './ui/strings.es.ts'
@@ -18,6 +19,10 @@ export function App() {
   const [printError, setPrintError] = useState(false)
   const [cleared, setCleared] = useState(false)
   const downloadRun = useRef(0) // invalidated by startOver/back so a late PDF is dropped
+  const copies = useSession((s) => s.copies)
+  const profileId = useSession((s) => s.profileId)
+  const marginMm = useSession((s) => s.marginMm)
+  const sheetFits = sheetLayout(profileId, copies, marginMm).ok
   const copy = strings.steps[step]
 
   const cropQuad = faces[cropFace]?.quad
@@ -34,7 +39,6 @@ export function App() {
 
   async function download() {
     if (preparing) return
-    const { copies } = sessionStore.getState()
     const run = ++downloadRun.current
     setPreparing(true)
     setPrintError(false)
@@ -74,7 +78,7 @@ export function App() {
       title={copy.title}
       onBack={step === 'load' || preparing ? undefined : back}
       primaryLabel={step === 'print' && preparing ? strings.printStep.preparing : copy.primary}
-      primaryDisabled={primaryDisabled || (step === 'print' && preparing)}
+      primaryDisabled={primaryDisabled || (step === 'print' && (preparing || !sheetFits))}
       onRestart={startOver}
       onPrimary={onPrimary}
     >
