@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
     // so the e2e guard sees assets requested outside the base. Navigation is state-only.
     appType: 'mpa',
     plugins: [react(), stripCspInDev()],
+    worker: { format: 'es' },
     define: {
       __COMMIT_SHA__: JSON.stringify(buildInfo.sha),
       __REPO_URL__: JSON.stringify(buildInfo.repoUrl),
