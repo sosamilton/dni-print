@@ -1,7 +1,8 @@
 // Worker logic, testable without a DOM: all browser imaging goes through ImagingBackend.
-import { getProfile, rectify, renderFace, validateQuad } from '../core/index.ts'
+import { FACE_FILTERS, getProfile, grayPlane, rectify, renderFace, validateQuad } from '../core/index.ts'
 import type { PixelImage, Quad, RasterBackend } from '../core/index.ts'
 import { buildPdfDocument } from '../core/pdf.ts'
+import type { GrayFace, JpegFace } from '../core/pdf.ts'
 import type { DetectionEngine } from '../engines/index.ts'
 import type { BitmapLike, FaceId, ProcessingApi } from './api.ts'
 
@@ -96,18 +97,19 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
       }
     },
 
-    async render(faceId, quad, rotation, profileId, rev) {
+    async render(faceId, quad, rotation, profileId, rev, filter) {
       const source = sources.get(faceId)
       if (!source) return { ok: false, rev, reason: 'no-source' }
       const profile = getProfile(profileId)
       if (!profile) return { ok: false, rev, reason: 'unknown-profile' }
+      if (!FACE_FILTERS.includes(filter)) return { ok: false, rev, reason: 'render-failed' }
       if (!validateQuad(quad) || !ROTATIONS.includes(rotation)) {
         return { ok: false, rev, reason: 'invalid-quad' }
       }
       try {
         const rectified = rectify(imaging.readPixels(source), quad, rotation, profile)
         if (!rectified) return { ok: false, rev, reason: 'invalid-quad' }
-        const face = await renderFace(rectified, 'color', null, imaging.raster)
+        const face = await renderFace(rectified, filter, null, imaging.raster)
         if (!face) return { ok: false, rev, reason: 'render-failed' }
         return { ok: true, rev, face }
       } catch {
@@ -118,8 +120,9 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
     async buildPdf(request) {
       const profile = getProfile(request.profileId)
       if (!profile) return { ok: false, reason: 'unknown-profile' }
+      if (!FACE_FILTERS.includes(request.filter)) return { ok: false, reason: 'pdf-failed' }
       try {
-        const jpegs = {} as Record<FaceId, { jpeg: Uint8Array }>
+        const jpegs = {} as Record<FaceId, JpegFace | GrayFace>
         for (const faceId of ['front', 'back'] as const) {
           const source = sources.get(faceId)
           if (!source) return { ok: false, reason: 'no-source' }
@@ -127,7 +130,10 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
           if (!validateQuad(quad) || !ROTATIONS.includes(rotation)) return { ok: false, reason: 'invalid-quad' }
           const rectified = rectify(imaging.readPixels(source), quad, rotation, profile)
           if (!rectified) return { ok: false, reason: 'invalid-quad' }
-          jpegs[faceId] = { jpeg: await imaging.encodeJpeg(rectified, PDF_JPEG_QUALITY) }
+          jpegs[faceId] =
+            request.filter === 'color'
+              ? { jpeg: await imaging.encodeJpeg(rectified, PDF_JPEG_QUALITY) }
+              : { gray: { width: rectified.width, height: rectified.height, data: grayPlane(rectified, request.filter) } }
         }
         const pdf = buildPdfDocument(request.placements, request.ruler, jpegs)
         return pdf ? { ok: true, pdf } : { ok: false, reason: 'pdf-failed' }

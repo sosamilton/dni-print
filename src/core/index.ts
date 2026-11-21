@@ -3,5 +3,5 @@
 export * from './profiles.ts'
 export * from './geometry/index.ts'
 export * from './layout.ts'
-export { renderFace } from './render-face.ts'
+export { applyFilter, FACE_FILTERS, grayPlane, renderFace } from './render-face.ts'
 export type { BitmapLike, RasterBackend, FaceFilter } from './render-face.ts'

@@ -48,4 +48,16 @@ describe('buildPdfDocument', () => {
     expect(horizontal[0] * PT).toBeCloseTo(r.ruler.xMm, 1)
     expect(297 - horizontal[1] * PT).toBeCloseTo(r.ruler.yMm, 1)
   })
+
+  it('embeds gray faces with ColorSpace DeviceGray and no DeviceRGB image', () => {
+    const r = layout(dni, 2, uniformMargins(10))
+    if (!r.ok) throw new Error('layout')
+    const gray = { width: 40, height: 25, data: new Uint8Array(40 * 25).fill(180) }
+    const bytes = buildPdfDocument(r.placements, r.ruler, { front: { gray }, back: { gray } })!
+    const text = new TextDecoder('latin1').decode(bytes)
+    expect(text).toMatch(/\/ColorSpace\s*\/DeviceGray/)
+    expect(text).not.toMatch(/\/ColorSpace\s*\/DeviceRGB/)
+    expect(text).toMatch(/\/Width\s*40/)
+    expect(text.match(/\/I\d+ Do/g)).toHaveLength(4)
+  })
 })

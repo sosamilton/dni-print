@@ -84,3 +84,15 @@ describe('session store copies and pdf urls', () => {
     expect(s.getState().copies).toBe(2)
   })
 })
+
+describe('session store filter', () => {
+  it('defaults to color, bumps no revs when unchanged, and resets on clear', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    expect(s.getState().filter).toBe('color')
+    expect(s.getState().setFilter('color')).toEqual({})
+    s.getState().setFilter('bn')
+    expect(s.getState().filter).toBe('bn')
+    s.getState().clearSession()
+    expect(s.getState().filter).toBe('color')
+  })
+})

@@ -8,14 +8,14 @@ import { fakeBitmap } from '../worker/fake-imaging.ts'
 const GOOD: Quad = [{ x: 10, y: 10 }, { x: 700, y: 20 }, { x: 690, y: 500 }, { x: 20, y: 510 }]
 
 function setup(detect?: () => Promise<unknown>) {
-  const renders: Array<{ rev: number; resolve: (r: RenderResult) => void }> = []
+  const renders: Array<{ rev: number; filter?: string; resolve: (r: RenderResult) => void }> = []
   let cleared = 0
   const api = {
     async ingest() {
       return { ok: true, sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(10, 10) }
     },
-    render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number) {
-      return new Promise<RenderResult>((resolve) => renders.push({ rev, resolve }))
+    render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number, filter?: string) {
+      return new Promise<RenderResult>((resolve) => renders.push({ rev, filter, resolve }))
     },
     detect,
     async clear() {
@@ -129,6 +129,24 @@ describe('pipeline controller', () => {
     await change
     expect(store.getState().setProfile('nope')).toEqual({})
     expect(store.getState().profileId).toBe('licencia-ar')
+  })
+
+  it('setFilter re-renders every ingested face with the new filter', async () => {
+    const { store, controller, renders } = setup()
+    const p = controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
+    await tick()
+    expect(renders[0].filter).toBe('color')
+    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1) })
+    await p
+    const before = store.getState().faces.front!.rev
+    const change = controller.setFilter('ahorro')
+    await tick()
+    expect(store.getState().filter).toBe('ahorro')
+    expect(renders[1].filter).toBe('ahorro')
+    expect(renders[1].rev).toBeGreaterThan(before)
+    renders[1].resolve({ ok: true, rev: renders[1].rev, face: fakeBitmap(1, 1) })
+    await change
+    expect(store.getState().setFilter('nope' as never)).toEqual({})
   })
 
   it('drops an ingest answer that arrives after clearSession', async () => {

@@ -1,8 +1,8 @@
 // worker: contract between the UI and the processing worker (AD-17).
 // `ui` may import this file; the worker may import `core` and `engines`.
-import type { BitmapLike, Placement, Quad, Rotation, Ruler } from '../core/index.ts'
+import type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler } from '../core/index.ts'
 
-export type { BitmapLike, Placement, Quad, Rotation, Ruler }
+export type { BitmapLike, FaceFilter, Placement, Quad, Rotation, Ruler }
 
 export type FaceId = 'front' | 'back'
 
@@ -36,6 +36,7 @@ export interface PdfRequest {
   placements: Placement[]
   ruler: Ruler
   faces: Record<FaceId, FaceCrop>
+  filter: FaceFilter
 }
 
 export type PdfResult =
@@ -47,13 +48,14 @@ export interface ProcessingApi {
   ingest(faceId: FaceId, blob: Blob): Promise<IngestResult>
   /** Detects the document on a reduced copy; the quad is in px of the full-res source. Null quad: none found. */
   detect(faceId: FaceId): Promise<DetectResult>
-  /** Rectifies and renders a face in color. Always echoes `rev` so callers can drop stale answers. */
+  /** Rectifies and renders a face with the given filter. Always echoes `rev` so callers can drop stale answers. */
   render(
     faceId: FaceId,
     quad: Quad,
     rotation: Rotation,
     profileId: string,
     rev: number,
+    filter: FaceFilter,
   ): Promise<RenderResult>
   /** Rectifies both faces and assembles the exact-scale A4 PDF (JPEG 0.92 at the rectified px). */
   buildPdf(request: PdfRequest): Promise<PdfResult>

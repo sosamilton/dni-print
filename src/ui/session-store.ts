@@ -1,8 +1,8 @@
 // In-memory session store (AD-8). No `persist`: nothing here ever touches storage.
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
-import { defaultQuad, DEFAULT_PROFILE_ID, getProfile } from '../core/index.ts'
-import type { Quad, Rotation } from '../core/index.ts'
+import { defaultQuad, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile } from '../core/index.ts'
+import type { FaceFilter, Quad, Rotation } from '../core/index.ts'
 import type { BitmapLike, FaceId, Size } from '../worker/api.ts'
 
 export interface FaceState {
@@ -25,6 +25,7 @@ export interface SessionState {
   faces: Partial<Record<FaceId, FaceState>>
   blobUrls: string[]
   copies: 1 | 2
+  filter: FaceFilter
 }
 
 export interface SessionActions {
@@ -39,6 +40,8 @@ export interface SessionActions {
   resetQuad(faceId: FaceId): number | null
   /** Returns the new rev of every affected face. */
   setProfile(profileId: string): Partial<Record<FaceId, number>>
+  /** Changes the print filter; returns the new rev of every affected face. */
+  setFilter(filter: FaceFilter): Partial<Record<FaceId, number>>
   /** Stores a render if its rev is current; otherwise closes it. True when stored. */
   receiveRender(faceId: FaceId, rev: number, bitmap: BitmapLike): boolean
   trackBlobUrl(url: string): void
@@ -80,6 +83,7 @@ export function createSessionStore(deps: SessionDeps) {
       faces: {},
       blobUrls: [],
       copies: 2,
+      filter: 'color',
 
       bindWorker(fn) {
         clearWorker = fn
@@ -138,6 +142,17 @@ export function createSessionStore(deps: SessionDeps) {
         return revs
       },
 
+      setFilter(filter) {
+        if (!FACE_FILTERS.includes(filter)) return {}
+        if (get().filter === filter) return {}
+        set({ filter })
+        const revs: Partial<Record<FaceId, number>> = {}
+        for (const faceId of Object.keys(get().faces) as FaceId[]) {
+          revs[faceId] = patchFace(faceId, {}) ?? undefined
+        }
+        return revs
+      },
+
       receiveRender(faceId, rev, bitmap) {
         const face = get().faces[faceId]
         if (!face || face.rev !== rev) {
@@ -177,7 +192,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2 })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color' })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

@@ -43,3 +43,19 @@ test('Empezar de nuevo desde el menú', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: steps.load.title })).toBeVisible()
   await expect(page.getByText(doneStep.cleared)).toBeVisible()
 })
+
+test('Blanco y negro y Ahorro de tinta generan PDF en escala de grises', async ({ page }) => {
+  await toPrint(page)
+  await expect(page.getByRole('button', { name: printStep.filters.color })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: printStep.filters.ahorro }).click()
+  await expect(page.getByRole('button', { name: printStep.filters.ahorro })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: printStep.filters.bn }).click()
+  await expect(page.getByTestId('placement').first().locator('canvas')).toBeVisible()
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: steps.print.primary, exact: true }).click(),
+  ])
+  const pdf = readFileSync((await download.path())!).toString('latin1')
+  expect(pdf).toMatch(/\/ColorSpace\s*\/DeviceGray/)
+  expect(pdf).not.toMatch(/\/ColorSpace\s*\/DeviceRGB/)
+})

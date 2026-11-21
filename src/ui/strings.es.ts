@@ -62,6 +62,8 @@ export const strings = {
     copiesLabel: 'Copias',
     copies: { 1: '1 copia', 2: '2 copias' },
     previewLabel: 'Vista previa de la hoja A4',
+    filterLabel: 'Color de impresión',
+    filters: { color: 'Color', bn: 'Blanco y negro', ahorro: 'Ahorro de tinta' },
     rulerLabel: '100 mm',
     notice: 'Al imprimir elegí Tamaño real o 100 %. Medí la regla: tiene que dar 10 cm.',
     preparing: 'Preparando PDF…',
