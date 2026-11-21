@@ -39,3 +39,34 @@ test('Ajustar esquinas abre el editor y Restablecer vuelve al quad detectado', a
   await page.getByRole('button', { name: cropStep.reset }).click()
   await expect.poll(left).toBeCloseTo(detected, 1)
 })
+
+test('la miniatura del paso 1 muestra el recorte, no la foto completa', async ({ page }) => {
+  await page.goto('./')
+  // Record every size the front thumbnail canvas has.
+  await page.evaluate(() => {
+    const seen = new Set<string>()
+    ;(globalThis as unknown as { thumbSizes: Set<string> }).thumbSizes = seen
+    const record = () => {
+      const c = document.querySelector('[data-face=front] canvas.face-thumb') as HTMLCanvasElement | null
+      // A fresh canvas has no size attributes (default 300×150) until its effect draws the bitmap.
+      if (c?.hasAttribute('width')) seen.add(`${c.width}x${c.height}`)
+    }
+    const tick = () => {
+      record()
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    // canvas.width/height reflect to attributes: this also catches a size that lasts under a frame.
+    new MutationObserver(record).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['width', 'height'] })
+  })
+  await page.getByTestId('front-gallery').setInputFiles(card())
+  const thumb = page.locator('[data-face=front] canvas.face-thumb')
+  // 1011 × 638 is the dni-ar rectified size at 300 DPI.
+  await expect.poll(() => thumb.evaluate((c) => {
+    const canvas = c as unknown as { width: number; height: number }
+    return `${canvas.width}x${canvas.height}`
+  })).toBe('1011x638')
+  const sizes = await page.evaluate(() => [...(globalThis as unknown as { thumbSizes: Set<string> }).thumbSizes])
+  // Never the full photo (or its preview), only the crop.
+  expect(sizes).toEqual(['1011x638'])
+})

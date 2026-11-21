@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultQuad, getProfile, layout, uniformMargins } from '../../src/core/index.ts'
 import { createProcessingApi } from '../../src/worker/processing-api.ts'
 import { createFakeImaging, type FakeBitmap } from './fake-imaging.ts'
+import { makeScene, meanCornerError } from '../core/card-scene.ts'
 
 const blob = (text: string, type = 'image/jpeg') => new Blob([text], { type })
 
@@ -113,6 +114,25 @@ describe('processing api', () => {
         { x: 40, y: 40 }, { x: 360, y: 40 }, { x: 360, y: 240 }, { x: 40, y: 240 },
       ] })
       expect(imaging.made.at(-1)?.closed).toBe(true)
+    })
+
+    it('refines the rescaled quad on the full-resolution source', async () => {
+      const imaging = createFakeImaging()
+      const truth = [{ x: 200, y: 150 }, { x: 1240, y: 150 }, { x: 1240, y: 806 }, { x: 200, y: 806 }] as never
+      const scene = makeScene({ width: 1440, height: 960, corners: truth, supersample: 2 })
+      const flat = imaging.readPixels
+      imaging.readPixels = (bitmap) => (bitmap.width === scene.width ? scene : flat(bitmap))
+      // Reduced copy is 1024 × 683 (k = 1.40625): the engine is a few px off there.
+      const k = 1024 / 1440
+      const off = [{ x: 3, y: -2 }, { x: -3, y: 3 }, { x: -2, y: -3 }, { x: 3, y: 2 }]
+      const engineQuad = (truth as { x: number; y: number }[]).map((p, i) => ({ x: p.x * k + off[i].x, y: p.y * k + off[i].y }))
+      const api = createProcessingApi(imaging, engine(async () => engineQuad))
+      await api.ingest('front', blob('1440x960'))
+      const r = await api.detect('front')
+      if (!r.ok || !r.quad) throw new Error('detect')
+      const rescaled = engineQuad.map((p) => ({ x: p.x * (1440 / 1024), y: p.y * (960 / 683) })) as never
+      expect(meanCornerError(r.quad, truth)).toBeLessThan(meanCornerError(rescaled, truth))
+      expect(meanCornerError(r.quad, truth)).toBeLessThan(1)
     })
 
     it('returns a null quad, and no-source without ingest', async () => {

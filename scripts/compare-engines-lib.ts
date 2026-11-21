@@ -7,7 +7,7 @@ export const ENGINE_IDS = ['scanic', 'opencv'] as const
 export type EngineName = (typeof ENGINE_IDS)[number]
 
 export type EngineOutcome =
-  | { status: 'ok'; detected: boolean; ms: number; error: number | null }
+  | { status: 'ok'; detected: boolean; ms: number; error: number | null; refinedError: number | null }
   | { status: 'engine-error' }
 
 /** One anonymous image: outcomes by engine. The index is its position in the list. */
@@ -50,6 +50,8 @@ export interface EngineSummary {
   meanMs: number | null
   /** Mean of per-image errors, only over detections with ground truth. */
   meanErrorPx: number | null
+  /** Same, after the full-resolution corner refinement. */
+  meanRefinedErrorPx: number | null
   withGroundTruth: number
 }
 
@@ -59,6 +61,7 @@ export function summarize(results: readonly ImageResult[]): EngineSummary[] {
   return ENGINE_IDS.map((engine) => {
     const ok = results.map((r) => r[engine]).filter((o) => o.status === 'ok')
     const errors = ok.flatMap((o) => (o.detected && o.error !== null ? [o.error] : []))
+    const refinedErrors = ok.flatMap((o) => (o.detected && o.refinedError !== null ? [o.refinedError] : []))
     return {
       engine,
       images: results.length,
@@ -66,6 +69,7 @@ export function summarize(results: readonly ImageResult[]): EngineSummary[] {
       engineErrors: results.length - ok.length,
       meanMs: mean(ok.map((o) => o.ms)),
       meanErrorPx: mean(errors),
+      meanRefinedErrorPx: mean(refinedErrors),
       withGroundTruth: errors.length,
     }
   })
@@ -74,8 +78,8 @@ export function summarize(results: readonly ImageResult[]): EngineSummary[] {
 const fmt = (n: number | null, digits = 1): string => (n === null ? '—' : n.toFixed(digits))
 
 function cell(o: EngineOutcome): string[] {
-  if (o.status === 'engine-error') return ['error de motor', '—', '—']
-  return [o.detected ? 'sí' : 'no', fmt(o.ms), o.detected ? fmt(o.error) : '—']
+  if (o.status === 'engine-error') return ['error de motor', '—', '—', '—']
+  return [o.detected ? 'sí' : 'no', fmt(o.ms), o.detected ? fmt(o.error) : '—', o.detected ? fmt(o.refinedError) : '—']
 }
 
 /** Plain-text Markdown report. Images are only identified by `imagen 1…n`: no names, paths or pixels. */
@@ -90,20 +94,20 @@ export function renderReport(results: readonly ImageResult[], source: ReportSour
     ...(source === 'fixtures' ? ['', '> Aviso: son imágenes sintéticas; los números no son representativos y no sirven para decidir el motor. Corré el script con fotos reales en `corpus/`.', ''] : []),
     `Valor por defecto de \`VITE_DETECTION_ENGINE\`: \`${DEFAULT_ENGINE}\``,
     '',
-    'Cada imagen se reduce como en el worker (lado mayor ≤ 1024 px, orientada por EXIF) y el cuadrilátero se reescala a px de la fuente antes de medir el error. El error es la media de la distancia entre esquinas contra `<nombre>.quad.json`; «—» significa sin dato.',
+    'Cada imagen se reduce como en el worker (lado mayor ≤ 1024 px, orientada por EXIF) y el cuadrilátero se reescala a px de la fuente antes de medir el error. El «error refinado» se mide después de ajustar las esquinas sobre la imagen a resolución completa (`refineQuad`), como hace el worker; si el refinado no es confiable, conserva el cuadrilátero sin refinar. El error es la media de la distancia entre esquinas contra `<nombre>.quad.json`; «—» significa sin dato.',
     '',
     '## Resumen',
     '',
-    '| Motor | Detecciones | Errores de motor | Tiempo medio (ms) | Error medio (px) | Imágenes con verdad terreno |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Motor | Detecciones | Errores de motor | Tiempo medio (ms) | Error medio (px) | Error refinado (px) | Imágenes con verdad terreno |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
     ...summarize(results).map(
-      (s) => `| ${s.engine} | ${s.detected}/${s.images} | ${s.engineErrors} | ${fmt(s.meanMs)} | ${fmt(s.meanErrorPx)} | ${s.withGroundTruth} |`,
+      (s) => `| ${s.engine} | ${s.detected}/${s.images} | ${s.engineErrors} | ${fmt(s.meanMs)} | ${fmt(s.meanErrorPx)} | ${fmt(s.meanRefinedErrorPx)} | ${s.withGroundTruth} |`,
     ),
     '',
     '## Detalle por imagen',
     '',
-    `| Imagen | ${ENGINE_IDS.map((e) => `${e}: detectó | ${e}: ms | ${e}: error (px)`).join(' | ')} |`,
-    `| --- | ${ENGINE_IDS.map(() => '--- | --- | ---').join(' | ')} |`,
+    `| Imagen | ${ENGINE_IDS.map((e) => `${e}: detectó | ${e}: ms | ${e}: error (px) | ${e}: error refinado (px)`).join(' | ')} |`,
+    `| --- | ${ENGINE_IDS.map(() => '--- | --- | --- | ---').join(' | ')} |`,
     ...results.map((r, i) => `| imagen ${i + 1} | ${ENGINE_IDS.flatMap((e) => cell(r[e])).join(' | ')} |`),
     '',
     '## Decisión',

@@ -11,6 +11,7 @@
 .face-thumb, .face-placeholder { flex: none; width: var(--face-thumb-width); height: var(--face-thumb-height); border-radius: var(--rounded-sm); object-fit: cover; }
 .face-thumb { border: var(--hairline) solid var(--color-border-hairline); }
 .face-placeholder { background: var(--color-placeholder); }
+.face-thumb-loading { display: block; box-sizing: border-box; background: var(--color-placeholder); }
 .face-text { display: flex; flex-direction: column; gap: calc(var(--hairline) * 2); min-width: 0; }
 .face-name { font-family: var(--font-body-family); font-size: var(--font-form-size); font-weight: 700; color: var(--color-ink-primary); }
 .face-status { font-size: var(--font-form-size); font-weight: 700; color: var(--color-ink-primary); }

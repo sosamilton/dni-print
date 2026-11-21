@@ -8,7 +8,9 @@ import { ENGINE_IDS, meanCornerError, parseQuadJson, renderReport } from './comp
 import type { EngineOutcome, ImageResult, ReportSource } from './compare-engines-lib.ts'
 
 // Mirrors the harness result shape (the harness is browser-only and typed by the app project).
-type HarnessOutcome = { status: 'ok'; detected: boolean; ms: number; quad: [number, number][] | null } | { status: 'engine-error' }
+type HarnessOutcome =
+  | { status: 'ok'; detected: boolean; ms: number; quad: [number, number][] | null; refinedQuad: [number, number][] | null }
+  | { status: 'engine-error' }
 type HarnessResult = Record<string, HarnessOutcome>
 
 const MIME: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }
@@ -58,7 +60,13 @@ async function main(): Promise<number> {
         out[id] =
           !o || o.status === 'engine-error'
             ? { status: 'engine-error' }
-            : ({ status: 'ok', detected: o.detected, ms: o.ms, error: o.quad && truth ? meanCornerError(o.quad, truth) : null } satisfies EngineOutcome)
+            : ({
+                status: 'ok',
+                detected: o.detected,
+                ms: o.ms,
+                error: o.quad && truth ? meanCornerError(o.quad, truth) : null,
+                refinedError: o.refinedQuad && truth ? meanCornerError(o.refinedQuad, truth) : null,
+              } satisfies EngineOutcome)
       }
       return out
     })

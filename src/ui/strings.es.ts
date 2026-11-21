@@ -43,6 +43,7 @@ export const strings = {
     replaceHint: 'Tocá para reemplazar',
     dropHint: 'o soltá la foto acá',
     thumbnailLabel: (face: string) => `Miniatura de ${face}`,
+    thumbnailLoading: (face: string) => `Preparando el recorte de ${face}`,
     privacyNotice: (desktop: boolean) =>
       `Las fotos no salen de tu ${desktop ? 'dispositivo' : 'teléfono'}. Se borran al cerrar la app.`,
     faceStates: { loaded: 'cargado', empty: 'falta', processing: 'procesando', error: 'con error' },

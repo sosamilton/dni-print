@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { meanCornerError, parseQuadJson, renderReport, summarize } from '../../scripts/compare-engines-lib.ts'
 import type { ImageResult } from '../../scripts/compare-engines-lib.ts'
 
-const ok = (detected: boolean, ms: number, error: number | null) => ({ status: 'ok' as const, detected, ms, error })
+const ok = (detected: boolean, ms: number, error: number | null, refinedError: number | null = null) => ({ status: 'ok' as const, detected, ms, error, refinedError })
 
 describe('meanCornerError', () => {
   it('averages corner distances', () => {
@@ -23,15 +23,15 @@ describe('parseQuadJson', () => {
 })
 
 const results: ImageResult[] = [
-  { scanic: ok(true, 10, 2), opencv: { status: 'engine-error' } },
+  { scanic: ok(true, 10, 2, 0.5), opencv: { status: 'engine-error' } },
   { scanic: ok(false, 20, null), opencv: { status: 'engine-error' } },
 ]
 
 describe('summarize', () => {
   it('excludes misses and engine errors from the error mean', () => {
     const [scanic, opencv] = summarize(results)
-    expect(scanic).toMatchObject({ detected: 1, meanErrorPx: 2, meanMs: 15, withGroundTruth: 1 })
-    expect(opencv).toMatchObject({ engineErrors: 2, meanMs: null, meanErrorPx: null })
+    expect(scanic).toMatchObject({ detected: 1, meanErrorPx: 2, meanRefinedErrorPx: 0.5, meanMs: 15, withGroundTruth: 1 })
+    expect(opencv).toMatchObject({ engineErrors: 2, meanMs: null, meanErrorPx: null, meanRefinedErrorPx: null })
   })
 })
 
@@ -44,6 +44,11 @@ describe('renderReport', () => {
     expect(text).toContain('por completar')
     expect(text).toContain('`scanic`')
     expect(text).toContain('error de motor')
+  })
+  it('reports the error with and without refinement', () => {
+    expect(text).toContain('| Error medio (px) | Error refinado (px) |')
+    expect(text).toContain('scanic: error (px) | scanic: error refinado (px)')
+    expect(text).toContain('| imagen 1 | sí | 10.0 | 2.0 | 0.5 | error de motor | — | — | — |')
     expect(text).not.toMatch(/\.(png|jpe?g|webp)|\.quad\.json\b.*\/|\/home|!\[/)
   })
 })

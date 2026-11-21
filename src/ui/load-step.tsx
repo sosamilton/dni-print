@@ -3,7 +3,7 @@ import type { DragEvent } from 'react'
 import { PROFILES } from '../core/profiles.ts'
 import type { BitmapLike } from '../core/index.ts'
 import type { FaceId } from '../worker/api.ts'
-import { faceStatus } from './load-step-model.ts'
+import { faceStatus, thumbnailView } from './load-step-model.ts'
 import { pipeline } from './pipeline.ts'
 import { CameraDialog } from './camera-dialog.tsx'
 import { currentNavigator, isDesktop } from './platform.ts'
@@ -66,6 +66,7 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
   const cameraRef = useRef(null as HTMLInputElement | null)
   const label = strings.loadStep.faces[faceId]
   const status = faceStatus({ loaded: Boolean(face), processing, error: error !== null })
+  const thumb = face ? thumbnailView(face) : null
 
   // Only the latest load of this face may touch the slot state.
   const latest = useRef(0)
@@ -116,11 +117,11 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
         aria-label={strings.loadStep.faceAreaLabel(label, strings.loadStep.faceStates[status])}
         onClick={() => galleryRef.current?.click()}
       >
-        {face && (
-          <Thumbnail
-            bitmap={face.quadOrigin !== 'default' && face.rendered ? face.rendered : face.previewBitmap}
-            label={strings.loadStep.thumbnailLabel(label)}
-          />
+        {thumb && thumb.kind !== 'loading' && (
+          <Thumbnail bitmap={thumb.bitmap} label={strings.loadStep.thumbnailLabel(label)} />
+        )}
+        {thumb?.kind === 'loading' && (
+          <span className="face-thumb face-thumb-loading" role="img" aria-label={strings.loadStep.thumbnailLoading(label)} />
         )}
         {!face && <span className="face-placeholder" aria-hidden="true" />}
         <span className="face-text">

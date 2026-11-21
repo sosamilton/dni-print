@@ -13,7 +13,8 @@ export function outputSizePx(profile: DocumentProfile): { widthPx: number; heigh
   }
 }
 
-function isValidImage(img: PixelImage): boolean {
+/** True for a well-formed RGBA image. Never throws. */
+export function isValidImage(img: PixelImage): boolean {
   return (
     !!img &&
     Number.isInteger(img.width) &&
