@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DragEvent } from 'react'
 import { PROFILES } from '../core/profiles.ts'
+import { isBlurry } from '../core/index.ts'
 import type { BitmapLike } from '../core/index.ts'
 import type { FaceId } from '../worker/api.ts'
 import { faceStatus, thumbnailView } from './load-step-model.ts'
@@ -135,6 +136,11 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
           <span className="face-hint">{face ? strings.loadStep.replaceHint : strings.loadStep.dropHint}</span>
         </span>
       </button>
+      {face && status === 'loaded' && isBlurry(face.sharpness) && (
+        <p className="face-warning" role="status">
+          {strings.photoWarnings.blurry}
+        </p>
+      )}
       <div className="face-actions">
         <button type="button" className="face-action" onClick={() => galleryRef.current?.click()}>
           {strings.loadStep.pickFromGallery}

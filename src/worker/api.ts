@@ -18,7 +18,8 @@ export type IngestResult =
 export type RenderFailure = 'no-source' | 'invalid-quad' | 'unknown-profile' | 'render-failed'
 
 export type RenderResult =
-  | { ok: true; rev: number; face: BitmapLike }
+  /** `sharpness`: variance of the Laplacian of the rectified crop, before filter and watermark (null if unmeasurable). */
+  | { ok: true; rev: number; face: BitmapLike; sharpness: number | null }
   | { ok: false; rev: number; reason: RenderFailure }
 
 export type DetectResult =

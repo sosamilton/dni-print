@@ -1,5 +1,5 @@
 // Worker logic, testable without a DOM: all browser imaging goes through ImagingBackend.
-import { FACE_FILTERS, getProfile, isWatermark, normalizeWatermark, rectify, refineQuad, renderFace, stampFace, validateQuad } from '../core/index.ts'
+import { FACE_FILTERS, getProfile, isWatermark, measureSharpness, normalizeWatermark, rectify, refineQuad, renderFace, stampFace, validateQuad } from '../core/index.ts'
 import type { PixelImage, Quad, RasterBackend } from '../core/index.ts'
 import { buildPdfDocument } from '../core/pdf.ts'
 import type { GrayFace, JpegFace } from '../core/pdf.ts'
@@ -111,9 +111,11 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
       try {
         const rectified = rectify(imaging.readPixels(source), quad, rotation, profile)
         if (!rectified) return { ok: false, rev, reason: 'invalid-quad' }
+        // Measured on the color crop: the filter and the watermark's sharp edges would hide the blur.
+        const sharpness = measureSharpness(rectified)
         const face = await renderFace(rectified, filter, watermark ?? null, imaging.raster)
         if (!face) return { ok: false, rev, reason: 'render-failed' }
-        return { ok: true, rev, face }
+        return { ok: true, rev, face, sharpness }
       } catch {
         return { ok: false, rev, reason: 'render-failed' }
       }

@@ -17,6 +17,7 @@
 .face-status { font-size: var(--font-form-size); font-weight: 700; color: var(--color-ink-primary); }
 .face-name + .face-status { font-size: var(--font-small-size); font-weight: 400; color: var(--color-ink-secondary); }
 .face-hint { font-size: var(--font-small-size); color: var(--color-ink-secondary); }
+.face-warning { margin: 0; padding: var(--spacing-2) var(--spacing-3); border-radius: var(--rounded-md); font-weight: 700; color: var(--color-warning); background: var(--color-surface-raised); border: var(--hairline) solid var(--color-warning); }
 .face-actions { display: flex; gap: var(--spacing-2); }
 .face-action { flex: 1; min-height: var(--hit-area); padding: 0 var(--spacing-3); border: 0; border-radius: var(--rounded-lg); background: var(--color-accent-soft); color: var(--color-accent); font-family: var(--font-label-family); font-size: var(--font-label-size); font-weight: var(--font-label-weight); cursor: pointer; }
 .load-privacy { margin: 0; padding: var(--spacing-3); border-radius: var(--rounded-md); background: var(--color-accent-soft); color: var(--color-accent); font-size: var(--font-small-size); line-height: 1.4; }

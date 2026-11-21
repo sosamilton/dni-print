@@ -49,6 +49,9 @@ export const strings = {
     faceStates: { loaded: 'cargado', empty: 'falta', processing: 'procesando', error: 'con error' },
     faceAreaLabel: (face: string, state: string) => `${face}, ${state}`,
   },
+  photoWarnings: {
+    blurry: 'La foto parece borrosa. Probá sacarla de nuevo con buena luz y el teléfono quieto.',
+  },
   camera: {
     title: 'Sacar foto con la cámara',
     previewLabel: 'Vista previa de la cámara',

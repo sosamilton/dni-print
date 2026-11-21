@@ -37,7 +37,7 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
     } catch {
       return // worker crashed; the face keeps its last render
     }
-    if (result.ok) store.getState().receiveRender(faceId, result.rev, result.face)
+    if (result.ok) store.getState().receiveRender(faceId, result.rev, result.face, result.sharpness)
   }
 
   async function detect(faceId: FaceId): Promise<DetectResult> {

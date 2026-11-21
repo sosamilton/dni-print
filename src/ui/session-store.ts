@@ -17,6 +17,8 @@ export interface FaceState {
   /** Revision of the inputs (quad, rotation, profile, face) this face currently has. */
   rev: number
   rendered: BitmapLike | null
+  /** Sharpness of `rendered`'s crop (see `measureSharpness`); null until a render is accepted. */
+  sharpness: number | null
 }
 
 export interface SessionState {
@@ -53,8 +55,8 @@ export interface SessionActions {
   setWatermarkText(text: string): Partial<Record<FaceId, number>>
   /** Sets the sheet margin (clamped to 5–20 mm). Layout-only: no re-render needed. */
   setMarginMm(mm: number): void
-  /** Stores a render if its rev is current; otherwise closes it. True when stored. */
-  receiveRender(faceId: FaceId, rev: number, bitmap: BitmapLike): boolean
+  /** Stores a render (and its sharpness) if its rev is current; otherwise closes it. True when stored. */
+  receiveRender(faceId: FaceId, rev: number, bitmap: BitmapLike, sharpness: number | null): boolean
   trackBlobUrl(url: string): void
   setCopies(copies: 1 | 2): void
   /** Creates a tracked blob URL for the PDF; release it with `releaseUrl`. */
@@ -128,6 +130,7 @@ export function createSessionStore(deps: SessionDeps) {
               rotation: 0,
               rev,
               rendered: null,
+              sharpness: null,
             },
           },
         }))
@@ -188,14 +191,14 @@ export function createSessionStore(deps: SessionDeps) {
         return get().watermarkOn ? bumpAll() : {}
       },
 
-      receiveRender(faceId, rev, bitmap) {
+      receiveRender(faceId, rev, bitmap, sharpness) {
         const face = get().faces[faceId]
         if (!face || face.rev !== rev) {
           bitmap.close()
           return false
         }
         face.rendered?.close()
-        set((s) => ({ faces: { ...s.faces, [faceId]: { ...face, rendered: bitmap } } }))
+        set((s) => ({ faces: { ...s.faces, [faceId]: { ...face, rendered: bitmap, sharpness } } }))
         return true
       },
 

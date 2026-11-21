@@ -33,12 +33,21 @@ async function ingestWith(detect: () => Promise<unknown>) {
   const t = setup(detect)
   const p = t.controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
   await tick()
-  t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1) })
+  t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1), sharpness: null })
   await p
   return t.store.getState().faces.front!
 }
 
 describe('pipeline controller', () => {
+  it('passes the render sharpness to the store', async () => {
+    const t = setup(async () => ({ ok: true, quad: GOOD }))
+    const p = t.controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
+    await tick()
+    t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1), sharpness: 17 })
+    await p
+    expect(t.store.getState().faces.front!.sharpness).toBe(17)
+  })
+
   it('stores a valid detected quad as auto', async () => {
     const f = await ingestWith(async () => ({ ok: true, quad: GOOD }))
     expect(f).toMatchObject({ quadOrigin: 'auto', quad: GOOD, detectedQuad: GOOD })
@@ -66,7 +75,7 @@ describe('pipeline controller', () => {
     expect(t.store.getState().faces.front).toBeUndefined()
     releases[1]({ ok: false, reason: 'detect-failed' })
     await tick()
-    t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1) })
+    t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1), sharpness: null })
     await second
     expect(t.store.getState().faces.front!.quadOrigin).toBe('default')
   })
@@ -94,8 +103,8 @@ describe('pipeline controller', () => {
     expect(rev3).toBeGreaterThan(rev2)
     const old: BitmapLike = fakeBitmap(1, 1)
     const fresh: BitmapLike = fakeBitmap(1, 1)
-    renders[0].resolve({ ok: true, rev: rev2, face: old })
-    renders[1].resolve({ ok: true, rev: rev3, face: fresh })
+    renders[0].resolve({ ok: true, rev: rev2, face: old, sharpness: null })
+    renders[1].resolve({ ok: true, rev: rev3, face: fresh, sharpness: null })
     await Promise.all([ingest, change])
     expect((old as ReturnType<typeof fakeBitmap>).closed).toBe(true)
     expect(store.getState().faces.front!.rendered).toBe(fresh)
@@ -106,7 +115,7 @@ describe('pipeline controller', () => {
     const { store, controller, renders, cleared } = setup()
     const p = controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
     await tick()
-    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1) })
+    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1), sharpness: null })
     await p
     controller.clearSession()
     await tick()
@@ -118,14 +127,14 @@ describe('pipeline controller', () => {
     const { store, controller, renders } = setup()
     const p = controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
     await tick()
-    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1) })
+    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1), sharpness: null })
     await p
     const before = store.getState().faces.front!.rev
     const change = controller.setProfile('licencia-ar')
     await tick()
     expect(store.getState().profileId).toBe('licencia-ar')
     expect(renders[1].rev).toBeGreaterThan(before)
-    renders[1].resolve({ ok: true, rev: renders[1].rev, face: fakeBitmap(1, 1) })
+    renders[1].resolve({ ok: true, rev: renders[1].rev, face: fakeBitmap(1, 1), sharpness: null })
     await change
     expect(store.getState().setProfile('nope')).toEqual({})
     expect(store.getState().profileId).toBe('licencia-ar')
@@ -136,7 +145,7 @@ describe('pipeline controller', () => {
     const p = controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
     await tick()
     expect(renders[0].filter).toBe('color')
-    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1) })
+    renders[0].resolve({ ok: true, rev: renders[0].rev, face: fakeBitmap(1, 1), sharpness: null })
     await p
     const before = store.getState().faces.front!.rev
     const change = controller.setFilter('ahorro')
@@ -144,7 +153,7 @@ describe('pipeline controller', () => {
     expect(store.getState().filter).toBe('ahorro')
     expect(renders[1].filter).toBe('ahorro')
     expect(renders[1].rev).toBeGreaterThan(before)
-    renders[1].resolve({ ok: true, rev: renders[1].rev, face: fakeBitmap(1, 1) })
+    renders[1].resolve({ ok: true, rev: renders[1].rev, face: fakeBitmap(1, 1), sharpness: null })
     await change
     expect(store.getState().setFilter('nope' as never)).toEqual({})
   })
@@ -204,7 +213,7 @@ describe('pipeline controller buildPdf', () => {
         return { ok: true, sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(10, 10) }
       },
       async render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number) {
-        return { ok: true, rev, face: fakeBitmap(1, 1) }
+        return { ok: true, rev, face: fakeBitmap(1, 1), sharpness: null }
       },
       async buildPdf(r: unknown) {
         request = r
@@ -238,7 +247,7 @@ describe('pipeline controller buildPdf', () => {
         return { ok: true, sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(10, 10) }
       },
       async render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number) {
-        return { ok: true, rev, face: fakeBitmap(1, 1) }
+        return { ok: true, rev, face: fakeBitmap(1, 1), sharpness: null }
       },
       async buildPdf(r: unknown) {
         if (boom) throw new Error('worker gone')
@@ -267,7 +276,7 @@ describe('pipeline controller buildPdf', () => {
     const api = {
       async render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number, _fl: unknown, wm: unknown) {
         seen.render.push(wm)
-        return { ok: true, rev, face: fakeBitmap(1, 1) } as RenderResult
+        return { ok: true, rev, face: fakeBitmap(1, 1), sharpness: null } as RenderResult
       },
       async buildPdf(req: { watermark: unknown }) {
         seen.pdf.push(req.watermark)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { validateQuad } from '../core/index.ts'
+import { isBlurry, validateQuad } from '../core/index.ts'
 import type { FaceId } from '../worker/api.ts'
 import { BitmapCanvas } from './bitmap-canvas.tsx'
 import { CornerEditor } from './corner-editor.tsx'
@@ -18,6 +18,11 @@ export function CropStep({ faceId }: { faceId: FaceId }) {
   const index = CROP_ORDER.indexOf(faceId) + 1
   const valid = validateQuad(face.quad)
   const copy = strings.cropStep
+  const blurry = isBlurry(face.sharpness) && (
+    <p className="crop-message" data-kind="warning" role="status">
+      {strings.photoWarnings.blurry}
+    </p>
+  )
 
   if (face.quadOrigin === 'auto' && !adjusting) {
     return (
@@ -27,6 +32,7 @@ export function CropStep({ faceId }: { faceId: FaceId }) {
           <BitmapCanvas bitmap={face.rendered} label={copy.resultLabel} className="crop-result" />
         )}
         {!face.rendered && <p role="status">{strings.loadStep.processing}</p>}
+        {blurry}
         <div className="crop-actions">
           <button type="button" className="crop-action" onClick={() => setAdjusting(true)}>
             {copy.adjust}
@@ -51,6 +57,7 @@ export function CropStep({ faceId }: { faceId: FaceId }) {
           {copy.lowResolution}
         </p>
       )}
+      {blurry}
       <div className="crop-actions">
         <button type="button" className="crop-action" onClick={() => void pipeline.setRotation(faceId, nextRotation(face.rotation))}>
           {copy.rotate}

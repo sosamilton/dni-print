@@ -41,14 +41,34 @@ describe('session store', () => {
     const rev2 = s.getState().faces.front!.rev
     s.getState().setRotation('front', 90)
     const stale = fakeBitmap(1, 1)
-    expect(s.getState().receiveRender('front', rev2, stale)).toBe(false)
+    expect(s.getState().receiveRender('front', rev2, stale, null)).toBe(false)
     expect(stale.closed).toBe(true)
     const orphan = fakeBitmap(1, 1)
-    expect(s.getState().receiveRender('back', 1, orphan)).toBe(false)
+    expect(s.getState().receiveRender('back', 1, orphan, null)).toBe(false)
     expect(orphan.closed).toBe(true)
     const ok = fakeBitmap(1, 1)
-    expect(s.getState().receiveRender('front', s.getState().faces.front!.rev, ok)).toBe(true)
+    expect(s.getState().receiveRender('front', s.getState().faces.front!.rev, ok, null)).toBe(true)
     expect(ok.closed).toBe(false)
+  })
+
+  it('keeps sharpness only with an accepted render and resets it on a new face', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    expect(s.getState().faces.front!.sharpness).toBeNull()
+    expect(s.getState().receiveRender('front', s.getState().faces.front!.rev, fakeBitmap(1, 1), 12.5)).toBe(true)
+    expect(s.getState().faces.front!.sharpness).toBe(12.5)
+    const old = s.getState().faces.front!.rev
+    s.getState().setRotation('front', 90)
+    expect(s.getState().receiveRender('front', old, fakeBitmap(1, 1), 999)).toBe(false)
+    expect(s.getState().faces.front!.sharpness).toBe(12.5)
+    expect(s.getState().receiveRender('front', s.getState().faces.front!.rev, fakeBitmap(1, 1), 300)).toBe(true)
+    expect(s.getState().faces.front!.sharpness).toBe(300)
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    expect(s.getState().faces.front!.sharpness).toBeNull()
+    s.getState().receiveRender('front', s.getState().faces.front!.rev, fakeBitmap(1, 1), 5)
+    s.getState().clearSession()
+    expect(s.getState().faces).toEqual({})
+    expect(JSON.stringify(s.getState())).not.toContain('sharpness')
   })
 
   it('clearSession releases everything and never resets rev', () => {
@@ -58,7 +78,7 @@ describe('session store', () => {
     const preview = fakeBitmap(1, 1)
     s.getState().setFace('front', { sourceSize: size, previewBitmap: preview })
     const rendered = fakeBitmap(1, 1)
-    s.getState().receiveRender('front', s.getState().faces.front!.rev, rendered)
+    s.getState().receiveRender('front', s.getState().faces.front!.rev, rendered, null)
     s.getState().trackBlobUrl('blob:a')
     const before = s.getState().rev
     s.getState().clearSession()

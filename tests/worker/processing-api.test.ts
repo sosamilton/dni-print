@@ -31,6 +31,42 @@ describe('processing api', () => {
     const q = defaultQuad(800, 600)
     const r = await api.render('front', q, 0, 'dni-ar', 7, 'color')
     expect(r.ok && r.face.width === 1011 && r.face.height === 638 && r.rev === 7).toBe(true)
+    expect(r.ok && r.sharpness).toBe(0) // flat fake pixels: measured, no detail
+  })
+
+  it('measures sharpness on the color crop, before filter and watermark', async () => {
+    const imaging = createFakeImaging()
+    imaging.readPixels = (bitmap) => {
+      const data = new Uint8ClampedArray(bitmap.width * bitmap.height * 4)
+      for (let i = 0; i < data.length; i += 4) {
+        const x = (i / 4) % bitmap.width
+        const y = Math.floor(i / 4 / bitmap.width)
+        data[i] = ((x >> 3) + (y >> 3)) % 2 ? 30 : 220
+        data[i + 1] = (x * 7) % 256
+        data[i + 2] = (y * 5) % 256
+        data[i + 3] = 255
+      }
+      return { width: bitmap.width, height: bitmap.height, data }
+    }
+    // A watermark with strong interior edges: measuring after it would change the sharpness.
+    imaging.raster.drawWatermark = async (p, text) => {
+      imaging.stamps.push(text)
+      const data = new Uint8ClampedArray(p.data)
+      for (let i = 0; i < data.length; i += 4) {
+        const x = (i / 4) % p.width
+        if (x % 2 === 0) data[i] = data[i + 1] = data[i + 2] = 0
+      }
+      return { width: p.width, height: p.height, data }
+    }
+    const api = createProcessingApi(imaging)
+    await api.ingest('front', blob('800x600'))
+    const q = defaultQuad(800, 600)
+    const plain = await api.render('front', q, 0, 'dni-ar', 1, 'color')
+    const stamped = await api.render('front', q, 0, 'dni-ar', 2, 'bn', { text: 'Copia' })
+    if (!plain.ok || !stamped.ok) throw new Error('render')
+    expect(plain.sharpness).toBeGreaterThan(0)
+    expect(stamped.sharpness).toBe(plain.sharpness)
+    expect(imaging.stamps).toEqual(['Copia'])
   })
 
   it('reports render failures', async () => {
@@ -72,6 +108,14 @@ describe('processing api', () => {
     const api = createProcessingApi({ ...imaging, raster: { ...imaging.raster, createBitmap: async () => { throw new Error('boom') } } })
     await api.ingest('front', blob('800x600'))
     expect(await api.render('front', defaultQuad(800, 600), 0, 'dni-ar', 5, 'color')).toEqual({ ok: false, rev: 5, reason: 'render-failed' })
+  })
+
+  it('failed renders carry no sharpness', async () => {
+    const api = createProcessingApi(createFakeImaging())
+    const q = defaultQuad(800, 600)
+    const r = await api.render('front', q, 0, 'dni-ar', 1, 'color')
+    expect(r.ok).toBe(false)
+    expect('sharpness' in r).toBe(false)
   })
 
   it('builds a PDF from both faces and reports failures', async () => {
