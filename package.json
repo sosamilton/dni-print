@@ -16,6 +16,7 @@
     "preview": "vite preview",
     "check:dist": "node scripts/check-dist-urls.ts",
     "check:engine": "node scripts/check-dist-engine.ts",
+    "compare-engines": "node scripts/compare-engines.ts",
     "check:licenses": "node scripts/check-licenses.ts",
     "test:e2e": "npm run build && playwright test"
   },

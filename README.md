@@ -23,6 +23,7 @@ npm ci
 | `npm run preview` | Sirve localmente el build de `dist/`. |
 | `npm run test:e2e` | Hace el build y corre la guardia de red de Playwright (ver "Privacidad verificable"). |
 | `npm run check:dist` | Revisa que `dist/` no tenga URLs fuera de la allowlist. |
+| `npm run compare-engines` | Corre `scanic` y `opencv` en Chromium sobre `corpus/` (o `tests/fixtures/` si está vacío) y escribe `docs/engine-comparison.md`. |
 | `npm run check:licenses` | Revisa las licencias de las dependencias de producción. |
 
 ## Estructura
@@ -121,6 +122,10 @@ Busca toda URL `http(s)://` en los archivos de `dist/` (o del directorio de `DIS
 
 - La URL del repositorio que usa "Código fuente" se permite sola: el check la calcula con `scripts/build-info.ts` y las mismas variables de entorno que el build. Por eso hay que correrlo con el mismo entorno que `npm run build`.
 - El resto vive en `scripts/dist-url-allowlist.json`. Solo se agregan URLs que no generan requests (namespaces XML, textos de error o de licencia). Cada entrada es `{ "url", "match", "reason" }`, con `match` en `"exact"` (la URL tal cual) o `"prefix"` (toda URL que empiece así) y el motivo en `reason`.
+
+### Comparación de motores (`npm run compare-engines`)
+
+Mide, por imagen y motor, si detectó, el tiempo y el error medio de esquinas contra `<nombre>.quad.json` (`[[x,y]×4]` TL, TR, BR, BL en px de la fuente) si existe junto a la imagen. Usa `corpus/` o, si no tiene imágenes, `tests/fixtures/`. El reporte `docs/engine-comparison.md` identifica las imágenes solo como `imagen 1…n` y deja la sección «Decisión» para una persona. El valor por defecto de `VITE_DETECTION_ENGINE` es `scanic` hasta que esa decisión diga otra cosa.
 
 ### Licencias (`npm run check:licenses`)
 
