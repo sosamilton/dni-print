@@ -87,6 +87,16 @@ default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; im
 
 El build y `npm run preview` la sirven intacta. Solo `npm run dev` la quita (plugin `strip-csp-in-dev` en `vite.config.ts`), porque el preámbulo inline de React Refresh la viola. `tests/ui/csp.test.ts` verifica que la política sea exactamente esa. No se cambia la CSP para que la app pase: se arregla la app.
 
+### Motor de detección (`VITE_DETECTION_ENGINE`)
+
+`scanic` (por defecto) o `opencv` (@techstark/opencv-js, single-thread, wasm embebido). Se resuelve en compilación: el bundle lleva un solo motor.
+
+```bash
+VITE_DETECTION_ENGINE=opencv npm run build && npm run check:dist
+```
+
+El build `opencv` suma un chunk propio de ~15 MB (mismo origen, cargado dentro del worker), agrega `'unsafe-eval'` a `script-src` (plugin `engineCsp` en `vite.config.ts`; el build `scanic` conserva AD-7 intacta) y fija el límite de precache en 16 MiB (`precacheOptions`, que reutilizará la historia 5.2). El CI corre lint, tests, build, `check:dist` y el e2e para ambos motores; solo `scanic` se publica en Pages.
+
 ### Guardia de red (`npm run test:e2e`)
 
 Hace el build de producción, lo sirve con `vite preview` en `http://localhost:4173` (más el base de `VITE_BASE`, ver "Publicación en GitHub Pages") y, en Chromium, Firefox y WebKit, recorre los cuatro pasos, "Atrás", el menú ⋮ y el diálogo de privacidad (`tests/e2e/network-guard.spec.ts`):

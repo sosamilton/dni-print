@@ -27,9 +27,16 @@ function stepWith(block: string, needle: string): string {
   return step
 }
 
-const PUSH_TO_MAIN = /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/
+const PUSH_TO_MAIN = /if: (matrix\.engine == 'scanic' && )?github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/
 
 describe('.github/workflows/deploy.yml', () => {
+  it('runs the checks for each detection engine and publishes only scanic', () => {
+    const checks = job('checks')
+    expect(checks).toMatch(/^ {8}engine: \[scanic, opencv\]$/m)
+    expect(checks).toContain('VITE_DETECTION_ENGINE: ${{ matrix.engine }}')
+    expect(stepWith(checks, 'actions/upload-pages-artifact@v5')).toContain("matrix.engine == 'scanic'")
+  })
+
   it('runs on push to main and on pull requests', () => {
     const on = topLevel('on')
     expect(on).toMatch(/^ {2}push:\n {4}branches: \[main\]$/m)
@@ -46,6 +53,7 @@ describe('.github/workflows/deploy.yml', () => {
       'npm run check:licenses',
       'npm run build',
       'npm run check:dist',
+      'npm run check:engine',
       'npx playwright test',
     ]
     const positions = commands.map((command) => checks.indexOf(`run: ${command}\n`))

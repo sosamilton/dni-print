@@ -1,6 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
-import { AD7_CSP } from '../csp-policy.ts'
+import { expectedCsp } from '../csp-policy.ts'
 import { pngFile } from './fixtures.ts'
 import { installNetworkGuard, type NetworkGuard } from './network-guard.ts'
 
@@ -120,13 +120,13 @@ const RECORD_CSP_VIOLATIONS = `window.__cspViolations = [];
   });`
 
 test.describe('CSP activa', () => {
-  test('sirve la CSP de AD-7 y el recorrido no produce violaciones', async ({ page, guard }) => {
+  test('sirve la CSP esperada (AD-7) y el recorrido no produce violaciones', async ({ page, guard }) => {
     await page.addInitScript({ content: RECORD_CSP_VIOLATIONS })
 
     await walkThroughApp(page)
 
     const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')
-    expect(csp).toBe(AD7_CSP)
+    expect(csp).toBe(expectedCsp())
     const violations = await page.evaluate('window.__cspViolations')
     expect(violations, 'Violaciones de CSP').toEqual([])
     expect(guard.externalRequests(), 'Requests a otros orígenes').toEqual([])

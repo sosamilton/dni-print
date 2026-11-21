@@ -60,7 +60,9 @@ describe('engine selection', () => {
   it('defaults to scanic and rejects unknown ids', () => {
     expect(resolveEngineId('')).toBe('scanic')
     expect(resolveEngineId(' scanic ')).toBe('scanic')
-    expect(createDetectionEngine('scanic').id).toBe('scanic')
+    // Only the engine chosen at build time is available (the CI matrix also runs unit tests with opencv).
+    const built = import.meta.env.VITE_DETECTION_ENGINE === 'opencv' ? 'opencv' : 'scanic'
+    expect(createDetectionEngine(built).id).toBe(built)
     expect(() => createDetectionEngine('foo')).toThrow(/foo/)
   })
 })

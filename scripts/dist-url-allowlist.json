@@ -42,5 +42,6 @@
   {"url": "http://www.phpied.com/rgb-color-parser-in-javascript/", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
   {"url": "http://www.w3.org/1999/02/22-rdf-syntax-ns#", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
   {"url": "http://www.w3.org/1999/xhtml", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
-  {"url": "http://www.yworks.com", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."}
+  {"url": "http://www.yworks.com", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
+  {"url": "https://github.com/opencv/opencv/issues/16739", "match": "exact", "reason": "Comentario en el glue de emscripten de OpenCV.js (chunk del build opencv); el código nunca la pide."}
 ]

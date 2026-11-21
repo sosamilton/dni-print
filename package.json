@@ -15,10 +15,12 @@
     "test": "vitest run",
     "preview": "vite preview",
     "check:dist": "node scripts/check-dist-urls.ts",
+    "check:engine": "node scripts/check-dist-engine.ts",
     "check:licenses": "node scripts/check-licenses.ts",
     "test:e2e": "npm run build && playwright test"
   },
   "dependencies": {
+    "@techstark/opencv-js": "5.0.0-release.1",
     "comlink": "4.4.2",
     "jspdf": "4.2.1",
     "react": "19.3.1",

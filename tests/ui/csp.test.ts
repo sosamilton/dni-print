@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { stripCspInDev } from '../../vite.config.ts'
+import { engineCsp, precacheOptions, stripCspInDev } from '../../vite.config.ts'
 import { AD7_CSP } from '../csp-policy.ts'
 
 const indexHtml = readFileSync(join(import.meta.dirname, '..', '..', 'index.html'), 'utf8')
@@ -41,5 +41,25 @@ describe('strip-csp-in-dev plugin', () => {
   it('does not depend on attribute order or quote style', () => {
     const variant = `<head>\n  <meta content="default-src 'self'" http-equiv='Content-Security-Policy'>\n</head>`
     expect(transform(variant)).not.toMatch(/Content-Security-Policy/i)
+  })
+})
+
+describe('engine-csp plugin', () => {
+  const run = (id: string) => (engineCsp(id).transformIndexHtml as (html: string) => string)(indexHtml)
+  const cspOf = (html: string) => /http-equiv="?Content-Security-Policy"?[^>]*content="([^"]*)"/i.exec(html)?.[1]
+
+  it('leaves AD-7 identical for scanic', () => {
+    expect(run('scanic')).toBe(indexHtml)
+  })
+
+  it("adds 'unsafe-eval' to script-src only for opencv", () => {
+    expect(cspOf(run('opencv'))).toBe(AD7_CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' 'unsafe-eval'"))
+  })
+})
+
+describe('precacheOptions', () => {
+  it('sets 16 MiB for opencv and less for scanic', () => {
+    expect(precacheOptions('opencv').maximumFileSizeToCacheInBytes).toBe(16 * 1024 * 1024)
+    expect(precacheOptions('scanic').maximumFileSizeToCacheInBytes).toBeLessThan(16 * 1024 * 1024)
   })
 })
