@@ -89,10 +89,11 @@ El build y `npm run preview` la sirven intacta. Solo `npm run dev` la quita (plu
 
 ### Guardia de red (`npm run test:e2e`)
 
-Hace el build de producción, lo sirve con `vite preview` en `http://localhost:4173` y, en Chromium, Firefox y WebKit, recorre los cuatro pasos, "Atrás", el menú ⋮ y el diálogo de privacidad (`tests/e2e/network-guard.spec.ts`):
+Hace el build de producción, lo sirve con `vite preview` en `http://localhost:4173` (más el base de `VITE_BASE`, ver "Publicación en GitHub Pages") y, en Chromium, Firefox y WebKit, recorre los cuatro pasos, "Atrás", el menú ⋮ y el diálogo de privacidad (`tests/e2e/network-guard.spec.ts`):
 
 - La guardia (`tests/e2e/network-guard.ts`) registra todo request de la página y los workers (y de los service workers solo en Chromium, porque Playwright no reporta su tráfico en Firefox ni WebKit; hoy la app no tiene service worker), y aborta los que van a otro origen (también websockets): nunca salen. Corre con la CSP desactivada para ver lo que la app *intenta*, aunque la CSP lo bloquearía.
 - Un segundo recorrido con la CSP activa falla ante cualquier `securitypolicyviolation`.
+- Toda respuesta del propio origen con status ≥ 400 (por ejemplo, un asset pedido fuera del subpath) también hace fallar los recorridos. Para eso `vite.config.ts` usa `appType: 'mpa'`: como GitHub Pages, `vite preview` responde 404 a un archivo inexistente en vez de devolver `index.html`.
 - Tests de cordura inyectan un `fetch` externo (desde la página y desde un worker) y comprueban que la guardia lo detecta.
 
 Para instalar los navegadores de Playwright y sus dependencias del sistema (una vez por máquina):
@@ -117,6 +118,40 @@ Lee las dependencias de producción de `package-lock.json` (las que no son `dev`
 - Allowlist (AD-13): MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, AGPL-3.0 y GPL-3.0 (con sus variantes `-only`, `-or-later` y `+`).
 - Expresiones SPDX: `OR` pasa si alguna opción pasa; `AND`, solo si pasan todas. `WITH`, `SEE LICENSE IN`, licencias desconocidas o ausentes no pasan.
 - Excepciones revisadas en `scripts/license-exceptions.json`: `{ "package", "version", "license", "reason" }`. Aplican solo si coinciden el nombre, la versión y la licencia exactos, así que cualquier actualización vuelve a pedir revisión. Hoy hay una: `pako@2.2.0` con `(MIT AND Zlib)`, que jsPDF necesita; Zlib es permisiva y compatible con AGPL-3.0. Antes de agregar otra, confirmá que la licencia sea compatible con AGPL-3.0 y explicá por qué en `reason`.
+
+## Publicación en GitHub Pages
+
+El workflow `.github/workflows/deploy.yml` ("CI y publicación") corre en GitHub Actions:
+
+- **En cada push a `main` y en cada pull request:** `npm ci`, instala los navegadores de Playwright y corre, en este orden, `npm run lint`, `npm run test`, `npm run check:licenses`, `npm run build`, `npm run check:dist` y la guardia de red (`npx playwright test`, en Chromium, Firefox y WebKit) sobre ese mismo build. Se hace **un solo build**: el `dist/` que pasa `check:dist` y el e2e es exactamente el que se publica. Si el e2e falla, el reporte de Playwright queda como artefacto `playwright-report` de la corrida.
+- **Solo en push a `main` y con todo en verde:** sube ese `dist/` y lo publica en Pages (job `deploy`, entorno `github-pages`). Los pull requests nunca publican. No hay staging ni previews.
+
+### Activar Pages (una vez)
+
+1. En el repo, **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Hacé push a `main`: solo un push a `main` publica. Una corrida manual (**Actions → CI y publicación → Run workflow**) solo corre los checks, no publica. La URL publicada aparece en el job `deploy` y en **Settings → Pages**.
+
+### Base del sitio (`VITE_BASE`)
+
+Vite arma las rutas de scripts, estilos, ícono y fuentes con `base`, que sale de `VITE_BASE` (`vite.config.ts`, normalizado por `resolveBase` en `scripts/build-info.ts`):
+
+- En Actions, por defecto vale `/<nombre-del-repo>/`, la ruta de un *project site* (`https://<usuario>.github.io/<repo>/`).
+- Para cambiarlo sin tocar el YAML, creá la variable de repo `VITE_BASE` en **Settings → Secrets and variables → Actions → Variables**. Por ejemplo `/` para un dominio propio o para el repo `<usuario>.github.io`.
+- Sin `VITE_BASE` (desarrollo local) el base es `/`. Se aceptan valores con o sin barras (`dni-print`, `/dni-print`, `//dni-print//` → `/dni-print/`) y subpaths anidados (`/a/b/`). Un valor inválido (una URL completa, `./`, espacios, `..`, `?`…) hace fallar el build con `VITE_BASE inválido: …`.
+
+Para probar localmente el build tal como se publica bajo un subpath (Playwright y `vite preview` usan el mismo base):
+
+```bash
+VITE_BASE=/dni-print/ npm run build
+VITE_BASE=/dni-print/ npx playwright test   # sirve en http://localhost:4173/dni-print/
+```
+
+### Rollback
+
+El rollback es **redesplegar el commit anterior**:
+
+- Desde **Actions**, abrí la corrida de "CI y publicación" del commit bueno (un push a `main`) y usá **Re-run all jobs**: vuelve a construir, verificar y publicar ese commit. Límites: GitHub solo permite re-correr corridas de hasta 30 días, y la re-corrida usa el workflow de ese commit pero las variables de repo actuales (por ejemplo, `VITE_BASE`).
+- O revertí el cambio y hacé push: `git revert <sha> && git push`. Esto funciona siempre: el workflow publica el resultado como cualquier otro push.
 
 ## Fotos reales
 

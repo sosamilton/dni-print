@@ -1,7 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnv } from 'vite'
+import { resolveBase } from './scripts/build-info.ts'
 
 const PORT = 4173
-const BASE_URL = `http://localhost:${PORT}`
+// Same base (and same `.env*` + env precedence) as `vite.config.ts`, so the suite runs on the build as published (e.g. under /dni-print/).
+const BASE_URL = `http://localhost:${PORT}${resolveBase({ ...loadEnv('production', process.cwd(), ''), ...process.env }.VITE_BASE)}`
 
 // E2E runs against the production build (`npm run build`) served by `vite preview`.
 export default defineConfig({

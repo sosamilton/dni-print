@@ -22,7 +22,7 @@ async function clickPrimary(page: Page, label: string) {
 async function walkThroughApp(page: Page) {
   const { steps, wizard, menu, privacyDialog } = strings
 
-  await page.goto('/')
+  await page.goto('./')
   await expectTitle(page, steps.load.title)
 
   await clickPrimary(page, steps.load.primary)
@@ -58,10 +58,11 @@ test.describe('guardia de red (CSP desactivada para ver todo intento)', () => {
   test('recorre la app sin requests a otros orígenes', async ({ page, guard }) => {
     await walkThroughApp(page)
     expect(guard.externalRequests(), 'Requests a otros orígenes').toEqual([])
+    expect(guard.failedResponses(), 'Respuestas con error del propio origen').toEqual([])
   })
 
   test('cordura: detecta y aborta un fetch externo desde la página', async ({ page, guard }) => {
-    await page.goto('/')
+    await page.goto('./')
     await expectTitle(page, strings.steps.load.title)
     const outcome = await page.evaluate(() =>
       fetch('https://example.com/').then(
@@ -74,7 +75,7 @@ test.describe('guardia de red (CSP desactivada para ver todo intento)', () => {
   })
 
   test('cordura: detecta un fetch externo desde un worker', async ({ page, guard }) => {
-    await page.goto('/')
+    await page.goto('./')
     await expectTitle(page, strings.steps.load.title)
     // A string keeps DOM-only APIs (Worker, Blob) out of the Node type context.
     const outcome = await page.evaluate(`new Promise((resolve) => {
@@ -87,11 +88,18 @@ test.describe('guardia de red (CSP desactivada para ver todo intento)', () => {
   })
 
   test('cordura: detecta un WebSocket externo', async ({ page, guard }) => {
-    await page.goto('/')
+    await page.goto('./')
     await expectTitle(page, strings.steps.load.title)
     await page.evaluate(`void new WebSocket('wss://example.com/')`)
     await expect.poll(() => guard.externalRequests()).toContain('wss://example.com/')
   })
+})
+
+test('cordura: detecta una respuesta 404 del propio origen', async ({ page, guard }) => {
+  await page.goto('./')
+  await expectTitle(page, strings.steps.load.title)
+  await page.evaluate(`fetch('./no-existe.js').catch(() => null)`)
+  await expect.poll(() => guard.failedResponses()).toContainEqual(expect.stringMatching(/^404 /))
 })
 
 const RECORD_CSP_VIOLATIONS = `window.__cspViolations = [];
@@ -110,11 +118,12 @@ test.describe('CSP activa', () => {
     const violations = await page.evaluate('window.__cspViolations')
     expect(violations, 'Violaciones de CSP').toEqual([])
     expect(guard.externalRequests(), 'Requests a otros orígenes').toEqual([])
+    expect(guard.failedResponses(), 'Respuestas con error del propio origen').toEqual([])
   })
 
   test('cordura: registra la violación de un fetch externo', async ({ page }) => {
     await page.addInitScript({ content: RECORD_CSP_VIOLATIONS })
-    await page.goto('/')
+    await page.goto('./')
     await expectTitle(page, strings.steps.load.title)
     await page.evaluate(`fetch('https://example.com/').catch(() => null)`)
     await expect.poll(() => page.evaluate('window.__cspViolations.length')).toBeGreaterThan(0)

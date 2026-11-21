@@ -3,6 +3,8 @@ import type { BrowserContext } from '@playwright/test'
 export interface NetworkGuard {
   /** Requests (http, https, ws, wss) to any origin other than the app's, in order, without duplicates. */
   externalRequests(): string[]
+  /** Same-origin responses with status >= 400 (`<status> <url>`), e.g. an asset requested outside the base path. */
+  failedResponses(): string[]
 }
 
 function isExternal(url: string, appOrigin: string): boolean {
@@ -24,6 +26,7 @@ function isExternal(url: string, appOrigin: string): boolean {
 /**
  * Records every request made by the context's pages, workers and service workers,
  * and aborts those aimed at another origin so they never leave the machine.
+ * It also records same-origin responses with an error status.
  * Install it before navigating.
  */
 export async function installNetworkGuard(context: BrowserContext, appOrigin: string): Promise<NetworkGuard> {
@@ -32,7 +35,15 @@ export async function installNetworkGuard(context: BrowserContext, appOrigin: st
     if (isExternal(url, appOrigin)) external.add(url)
   }
 
+  const failed = new Set<string>()
+
   context.on('request', (request) => record(request.url()))
+  context.on('response', (response) => {
+    const url = response.url()
+    if (response.status() >= 400 && !isExternal(url, appOrigin) && /^https?:/.test(url)) {
+      failed.add(`${response.status()} ${url}`)
+    }
+  })
   context.on('page', (page) => page.on('websocket', (ws) => record(ws.url())))
   for (const page of context.pages()) page.on('websocket', (ws) => record(ws.url()))
 
@@ -55,5 +66,5 @@ export async function installNetworkGuard(context: BrowserContext, appOrigin: st
     ws.connectToServer()
   })
 
-  return { externalRequests: () => [...external] }
+  return { externalRequests: () => [...external], failedResponses: () => [...failed] }
 }

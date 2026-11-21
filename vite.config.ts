@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
-import { gitFromCli, resolveBuildInfo } from './scripts/build-info.ts'
+import { gitFromCli, resolveBase, resolveBuildInfo } from './scripts/build-info.ts'
 
 const CSP_META = /[ \t]*<meta\b[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>\r?\n?/i
 
@@ -21,10 +21,15 @@ export function stripCspInDev(): Plugin {
 export default defineConfig(({ mode }) => {
   // `.env*` files fill in what the real environment does not set.
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env }
+  const base = resolveBase(env.VITE_BASE)
   const buildInfo = resolveBuildInfo(env, gitFromCli())
-  console.info(`[build-info] sha=${buildInfo.sha ?? 'none'} repoUrl=${buildInfo.repoUrl ?? 'none'}`)
+  console.info(`[build-info] sha=${buildInfo.sha ?? 'none'} repoUrl=${buildInfo.repoUrl ?? 'none'} base=${base}`)
 
   return {
+    base,
+    // Like GitHub Pages, answer missing files with 404 instead of the SPA index.html,
+    // so the e2e guard sees assets requested outside the base. Navigation is state-only.
+    appType: 'mpa',
     plugins: [react(), stripCspInDev()],
     define: {
       __COMMIT_SHA__: JSON.stringify(buildInfo.sha),

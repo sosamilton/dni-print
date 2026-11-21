@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRepoUrl, resolveBuildInfo, type GitInfo } from '../../scripts/build-info.ts'
+import { normalizeRepoUrl, resolveBase, resolveBuildInfo, type GitInfo } from '../../scripts/build-info.ts'
 import { currentSourceCodeUrl, sourceCodeUrl } from '../../src/ui/source-link.ts'
 
 const SHA = '0123456789abcdef0123456789abcdef01234567'
@@ -98,5 +98,32 @@ describe('sourceCodeUrl', () => {
 describe('currentSourceCodeUrl', () => {
   it('applies sourceCodeUrl to the values injected by vite define', () => {
     expect(currentSourceCodeUrl()).toBe(sourceCodeUrl(__REPO_URL__, __COMMIT_SHA__))
+  })
+})
+
+describe('resolveBase', () => {
+  it('defaults to / when VITE_BASE is missing or blank', () => {
+    for (const raw of [undefined, '', '   ', '/', '//']) expect(resolveBase(raw), String(raw)).toBe('/')
+  })
+
+  it('keeps a canonical base', () => {
+    expect(resolveBase('/dni-print/')).toBe('/dni-print/')
+  })
+
+  it('adds missing slashes and collapses repeated ones', () => {
+    for (const raw of ['dni-print', '/dni-print', 'dni-print/', '//dni-print//', ' /dni-print/ ']) {
+      expect(resolveBase(raw), raw).toBe('/dni-print/')
+    }
+  })
+
+  it('supports nested subpaths', () => {
+    expect(resolveBase('/a/b')).toBe('/a/b/')
+    expect(resolveBase('a//b/')).toBe('/a/b/')
+  })
+
+  it('throws a Spanish error on invalid values', () => {
+    for (const raw of ['https://x.github.io/r/', './', '/a b/', '/../x/', '/a?b', '/a#b', '.', '/a/./b/']) {
+      expect(() => resolveBase(raw), raw).toThrow(/^VITE_BASE inválido: /)
+    }
   })
 })

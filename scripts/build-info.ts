@@ -97,3 +97,24 @@ export function gitFromCli(): GitInfo {
     remoteUrl: () => runGit(['remote', 'get-url', 'origin']),
   }
 }
+
+const BASE_SEGMENT = /^[A-Za-z0-9._~-]+$/
+
+/**
+ * Normalizes `VITE_BASE` into the canonical Vite `base`: `/` or `/seg/…/`.
+ * Missing or blank → `/`; missing or repeated slashes are fixed. Throws on
+ * anything else (URLs, relative `./`, spaces, `.`/`..`, query strings) so the
+ * build fails instead of publishing broken asset paths.
+ */
+export function resolveBase(raw: string | undefined): string {
+  const value = raw?.trim() ?? ''
+  const segments = value.split('/').filter((segment) => segment !== '')
+  for (const segment of segments) {
+    if (!BASE_SEGMENT.test(segment) || segment === '.' || segment === '..') {
+      throw new Error(
+        `VITE_BASE inválido: ${JSON.stringify(raw)}. Usá un path como "/dni-print/" (solo letras, números y . _ ~ -).`,
+      )
+    }
+  }
+  return segments.length ? `/${segments.join('/')}/` : '/'
+}

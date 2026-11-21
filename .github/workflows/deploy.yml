@@ -1,0 +1,92 @@
+name: CI y publicación
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per ref at a time: pushes to main queue in order (an older deploy never lands last); PRs cancel stale runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Base path of the published site: the repo variable VITE_BASE, or /<repo>/ (project site).
+  VITE_BASE: ${{ vars.VITE_BASE || format('/{0}/', github.event.repository.name) }}
+
+jobs:
+  checks:
+    name: Lint, tests, build y guardia de red
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests unitarios
+        run: npm run test
+
+      - name: Licencias
+        run: npm run check:licenses
+
+      # A single build: the dist/ checked below is exactly the one that gets published.
+      - name: Build
+        run: npm run build
+
+      - name: URLs en dist/
+        run: npm run check:dist
+
+      - name: Guardia de red (e2e)
+        id: e2e
+        run: npx playwright test
+
+      - name: Subir reporte de Playwright
+        if: failure() && steps.e2e.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Subir dist/ para Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Publicar en GitHub Pages
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v5
