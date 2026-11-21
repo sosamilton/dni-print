@@ -68,7 +68,8 @@
   --corner-dot-size: 22px;
   --corner-line-width: 2px;
   --focus-ring-width: 3px;
-  --magnifier-size: 96px;
+  --magnifier-size: 150px;
+  --magnifier-zoom: 3;
   --color-on-accent: #FFFFFF;
   --color-handle-edge: rgba(0, 0, 0, 0.5);
   --progress-height: 5px;

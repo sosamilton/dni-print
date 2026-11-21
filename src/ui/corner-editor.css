@@ -8,6 +8,8 @@
 .corner-dot { width: var(--corner-dot-size); height: var(--corner-dot-size); border-radius: 50%; border: var(--corner-line-width) solid var(--color-on-accent); background: var(--color-accent); box-shadow: 0 0 0 var(--hairline) var(--color-handle-edge); }
 .corner-handle:focus-visible .corner-dot { outline: var(--focus-ring-width) solid var(--color-ink-primary); outline-offset: var(--corner-line-width); }
 .corner-editor[data-valid='false'] .corner-dot { background: var(--color-danger); }
-.corner-magnifier { position: absolute; top: var(--spacing-1); width: var(--magnifier-size); height: var(--magnifier-size); border: var(--corner-line-width) solid var(--color-on-accent); border-radius: 50%; box-shadow: 0 0 0 var(--hairline) var(--color-handle-edge); pointer-events: none; background: var(--color-on-accent); }
+.corner-magnifier { position: absolute; box-sizing: content-box; width: var(--magnifier-size); height: var(--magnifier-size); border: var(--corner-line-width) solid var(--color-on-accent); border-radius: 50%; box-shadow: 0 0 0 var(--hairline) var(--color-handle-edge); pointer-events: none; background: var(--color-on-accent); }
 .corner-magnifier[data-side='left'] { left: var(--spacing-1); }
 .corner-magnifier[data-side='right'] { right: var(--spacing-1); }
+.corner-magnifier[data-vside='top'] { top: var(--spacing-1); }
+.corner-magnifier[data-vside='bottom'] { bottom: var(--spacing-1); }

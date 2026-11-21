@@ -4,12 +4,20 @@ import { validateQuad } from '../core/index.ts'
 import type { Quad } from '../core/index.ts'
 import type { FaceState } from './session-store.ts'
 import { BitmapCanvas } from './bitmap-canvas.tsx'
-import { clampPoint, keyDelta, screenToSource, withCorner } from './corner-editor-model.ts'
+import {
+  MAGNIFIER_SIZE_PX,
+  MAGNIFIER_ZOOM,
+  adjacentCorners,
+  clampPoint,
+  keyDelta,
+  magnifierSide,
+  magnifierWindow,
+  screenToSource,
+  toMagnifier,
+  withCorner,
+} from './corner-editor-model.ts'
 import { strings } from './strings.es.ts'
 import './corner-editor.css'
-
-const MAGNIFIER_PX = 96
-const MAGNIFIER_SPAN_PX = 40 // source px shown in the magnifier
 
 export interface CornerEditorProps {
   face: Pick<FaceState, 'sourceSize' | 'previewBitmap' | 'quad'>
@@ -17,46 +25,88 @@ export interface CornerEditorProps {
   onCommit: (quad: Quad) => void
 }
 
-function Magnifier({ face, quad, index }: { face: CornerEditorProps['face']; quad: Quad; index: number }) {
+function readNumber(style: CSSStyleDeclaration, name: string, fallback: number): number {
+  const value = parseFloat(style.getPropertyValue(name))
+  return value > 0 ? value : fallback
+}
+
+function Magnifier({
+  face,
+  quad,
+  index,
+  displayedWidth,
+}: {
+  face: CornerEditorProps['face']
+  quad: Quad
+  index: number
+  /** Width of the image on screen (CSS px). */
+  displayedWidth: number
+}) {
   const ref = useRef(null as HTMLCanvasElement | null)
   const point = quad[index]
+  const [a, b] = adjacentCorners(quad, index)
   useEffect(() => {
-    const ctx = ref.current?.getContext('2d')
-    if (!ctx) return
-    const scale = face.previewBitmap.width / face.sourceSize.widthPx
-    const span = MAGNIFIER_SPAN_PX * scale
-    ctx.clearRect(0, 0, MAGNIFIER_PX, MAGNIFIER_PX)
-    try {
-      ctx.drawImage(
-        face.previewBitmap as unknown as CanvasImageSource,
-        point.x * scale - span / 2,
-        point.y * scale - span / 2,
-        span,
-        span,
-        0,
-        0,
-        MAGNIFIER_PX,
-        MAGNIFIER_PX,
-      )
-    } catch {
-      // Bitmap closed; nothing to magnify.
+    const canvas = ref.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    const style = getComputedStyle(canvas)
+    const size = readNumber(style, '--magnifier-size', MAGNIFIER_SIZE_PX)
+    const zoom = readNumber(style, '--magnifier-zoom', MAGNIFIER_ZOOM)
+    const dpr = window.devicePixelRatio || 1
+    const buffer = Math.round(size * dpr)
+    if (canvas.width !== buffer) canvas.width = buffer
+    if (canvas.height !== buffer) canvas.height = buffer
+    // Scale by the rounded buffer, not raw dpr, so fractional ratios map exactly.
+    const scale = buffer / size
+    ctx.setTransform(scale, 0, 0, scale, 0, 0)
+    ctx.clearRect(0, 0, size, size)
+    const { sourceSize, previewBitmap } = face
+    const previewSize = { width: previewBitmap.width, height: previewBitmap.height }
+    const win = magnifierWindow(point, sourceSize, previewSize, displayedWidth, size, zoom)
+    if (win) {
+      try {
+        ctx.drawImage(
+          previewBitmap as unknown as CanvasImageSource,
+          win.sx,
+          win.sy,
+          win.sw,
+          win.sh,
+          win.dx,
+          win.dy,
+          win.dw,
+          win.dh,
+        )
+      } catch {
+        // Bitmap closed; nothing to magnify.
+      }
     }
-    ctx.strokeStyle = '#d33'
+    const lineWidth = readNumber(style, '--corner-line-width', 2)
+    ctx.lineWidth = lineWidth
+    ctx.strokeStyle = style.getPropertyValue('--color-accent').trim() || 'blue'
     ctx.beginPath()
-    ctx.moveTo(MAGNIFIER_PX / 2, 0)
-    ctx.lineTo(MAGNIFIER_PX / 2, MAGNIFIER_PX)
-    ctx.moveTo(0, MAGNIFIER_PX / 2)
-    ctx.lineTo(MAGNIFIER_PX, MAGNIFIER_PX / 2)
+    for (const neighbour of [a, b]) {
+      const to = toMagnifier(neighbour, point, sourceSize, previewSize, displayedWidth, size, zoom)
+      if (!to) continue
+      ctx.moveTo(size / 2, size / 2)
+      ctx.lineTo(to.x, to.y)
+    }
     ctx.stroke()
-  }, [face, point.x, point.y])
-  const side = point.x < face.sourceSize.widthPx / 2 ? 'right' : 'left'
+    ctx.lineWidth = lineWidth / 2
+    ctx.strokeStyle = style.getPropertyValue('--color-danger').trim() || 'red'
+    ctx.beginPath()
+    ctx.moveTo(size / 2, 0)
+    ctx.lineTo(size / 2, size)
+    ctx.moveTo(0, size / 2)
+    ctx.lineTo(size, size / 2)
+    ctx.stroke()
+  }, [face, point, a, b, displayedWidth])
+  const side = magnifierSide(point, face.sourceSize)
   return (
     <canvas
       ref={ref}
       className="corner-magnifier"
-      data-side={side}
-      width={MAGNIFIER_PX}
-      height={MAGNIFIER_PX}
+      data-side={side.x}
+      data-vside={side.y}
       role="img"
       aria-label={strings.cropStep.magnifierLabel}
     />
@@ -68,6 +118,7 @@ export function CornerEditor({ face, onCommit }: CornerEditorProps) {
   const wrapRef = useRef(null as HTMLDivElement | null)
   const [draft, setDraft] = useState(null as Quad | null)
   const [dragging, setDragging] = useState(null as number | null)
+  const [displayedWidth, setDisplayedWidth] = useState(0)
   const quad = draft ?? face.quad
   const valid = validateQuad(quad)
 
@@ -85,6 +136,7 @@ export function CornerEditor({ face, onCommit }: CornerEditorProps) {
     event.preventDefault()
     event.currentTarget.setPointerCapture?.(event.pointerId)
     event.currentTarget.focus()
+    setDisplayedWidth(wrapRef.current?.getBoundingClientRect().width ?? 0)
     setDragging(index)
     setDraft(face.quad)
   }
@@ -150,7 +202,7 @@ export function CornerEditor({ face, onCommit }: CornerEditorProps) {
             <span className="corner-dot" />
           </button>
         ))}
-        {dragging !== null && <Magnifier face={face} quad={quad} index={dragging} />}
+        {dragging !== null && <Magnifier face={face} quad={quad} index={dragging} displayedWidth={displayedWidth} />}
       </div>
     </div>
   )

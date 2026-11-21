@@ -56,8 +56,42 @@ test('arrastrar una esquina con el mouse y girar', async ({ page }) => {
   const box = (await br.boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
-  await page.mouse.move(box.x + box.width / 2 - 5, box.y + box.height / 2 - 5)
-  await expect(page.getByRole('img', { name: cropStep.magnifierLabel })).toBeVisible()
+  // Moverla en diagonal para que el lado hacia TR no quede alineado con la cruz.
+  await page.mouse.move(box.x + box.width / 2 - 60, box.y + box.height / 2 - 5)
+  const magnifier = page.getByRole('img', { name: cropStep.magnifierLabel })
+  await expect(magnifier).toBeVisible()
+  // 150 px CSS de contenido, nítida (buffer = 150 × devicePixelRatio), del lado opuesto a BR.
+  const mbox = (await magnifier.boundingBox())!
+  const brBox = (await br.boundingBox())!
+  const trBox = (await page.getByTestId('corner-1').boundingBox())!
+  // El aumento es uniforme: la dirección BR→TR en pantalla es la misma dentro de la lupa.
+  const dir = { x: trBox.x - brBox.x, y: trBox.y - brBox.y }
+  const canvas = await magnifier.evaluate((el: HTMLCanvasElement, d) => {
+    const ctx = el.getContext('2d')!
+    const scale = el.width / el.clientWidth
+    // Lejos de la cruz y de los lados: tiene que verse la foto (PNG sólido 60,120,200).
+    const at = Math.round(el.width * 0.25)
+    const px = Array.from(ctx.getImageData(at, at, 1, 1).data)
+    // Sobre el lado hacia TR, a 50 px CSS del centro: algo dibujado distinto de la foto.
+    const len = Math.hypot(d.x, d.y)
+    const sx = Math.round((75 + (50 * d.x) / len) * scale)
+    const sy = Math.round((75 + (50 * d.y) / len) * scale)
+    const area = ctx.getImageData(sx - 2, sy - 2, 5, 5).data
+    let minBlue = 255
+    for (let i = 0; i < area.length; i += 4) minBlue = Math.min(minBlue, area[i + 2])
+    return { clientWidth: el.clientWidth, width: el.width, expected: Math.round(150 * window.devicePixelRatio), px, minBlue }
+  }, dir)
+  expect(canvas.clientWidth).toBe(150)
+  expect(canvas.width).toBe(canvas.expected)
+  const [r, g, b, alpha] = canvas.px
+  expect(alpha).toBe(255)
+  expect(b).toBeGreaterThan(r + 60)
+  expect(b).toBeGreaterThan(g + 30)
+  expect(canvas.minBlue).toBeLessThan(b - 15)
+  await expect(magnifier).toHaveAttribute('data-side', 'left')
+  await expect(magnifier).toHaveAttribute('data-vside', 'top')
+  const stage = (await page.getByTestId('corner-editor').boundingBox())!
+  expect(mbox.x + mbox.width).toBeLessThan(stage.x + stage.width / 2)
   await page.mouse.up()
   await expect(page.getByRole('img', { name: cropStep.magnifierLabel })).toHaveCount(0)
   await page.getByRole('button', { name: cropStep.rotate }).click()
