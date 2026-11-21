@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import type { Quad } from '../../src/core/index.ts'
 import type { BitmapLike, FaceId, ProcessingApi, RenderResult } from '../../src/worker/api.ts'
 import { createPipelineController, installPagehideClear } from '../../src/ui/pipeline-controller.ts'
 import { createSessionStore } from '../../src/ui/session-store.ts'
 import { fakeBitmap } from '../worker/fake-imaging.ts'
 
-function setup() {
+const GOOD: Quad = [{ x: 10, y: 10 }, { x: 700, y: 20 }, { x: 690, y: 500 }, { x: 20, y: 510 }]
+
+function setup(detect?: () => Promise<unknown>) {
   const renders: Array<{ rev: number; resolve: (r: RenderResult) => void }> = []
   let cleared = 0
   const api = {
@@ -14,6 +17,7 @@ function setup() {
     render(_f: FaceId, _q: unknown, _r: unknown, _p: string, rev: number) {
       return new Promise<RenderResult>((resolve) => renders.push({ rev, resolve }))
     },
+    detect,
     async clear() {
       cleared++
     },
@@ -25,7 +29,48 @@ function setup() {
 
 const tick = () => new Promise((r) => setTimeout(r, 0))
 
+async function ingestWith(detect: () => Promise<unknown>) {
+  const t = setup(detect)
+  const p = t.controller.ingest('front', new Blob(['x'], { type: 'image/png' }))
+  await tick()
+  t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1) })
+  await p
+  return t.store.getState().faces.front!
+}
+
 describe('pipeline controller', () => {
+  it('stores a valid detected quad as auto', async () => {
+    const f = await ingestWith(async () => ({ ok: true, quad: GOOD }))
+    expect(f).toMatchObject({ quadOrigin: 'auto', quad: GOOD, detectedQuad: GOOD })
+  })
+
+  it.each([
+    ['null', async () => ({ ok: true, quad: null })],
+    ['failure', async () => ({ ok: false, reason: 'detect-failed' })],
+    ['throw', async () => { throw new Error('x') }],
+    ['invalid', async () => ({ ok: true, quad: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 10 }, { x: 10, y: 10 }] })],
+  ])('falls back to default on %s', async (_n, detect) => {
+    const f = await ingestWith(detect as () => Promise<unknown>)
+    expect(f).toMatchObject({ quadOrigin: 'default', detectedQuad: null })
+  })
+
+  it('discards a detection when the ingest was replaced', async () => {
+    const releases: Array<(v: unknown) => void> = []
+    const t = setup(() => new Promise((r) => releases.push(r)))
+    const first = t.controller.ingest('front', new Blob(['a']))
+    await tick()
+    const second = t.controller.ingest('front', new Blob(['b']))
+    await tick()
+    releases[0]({ ok: true, quad: GOOD })
+    expect(await first).toEqual({ ok: false, reason: 'superseded' })
+    expect(t.store.getState().faces.front).toBeUndefined()
+    releases[1]({ ok: false, reason: 'detect-failed' })
+    await tick()
+    t.renders[0].resolve({ ok: true, rev: t.renders[0].rev, face: fakeBitmap(1, 1) })
+    await second
+    expect(t.store.getState().faces.front!.quadOrigin).toBe('default')
+  })
+
   it('detect forwards the worker answer and captures a crash', async () => {
     const ok = { ok: true, quad: null }
     const mk = (detect: () => Promise<unknown>) =>

@@ -20,7 +20,7 @@ const LOAD = <LoadStep />
 export function StepBody({ step, cropFace, printError = false }: StepBodyProps) {
   const placeholder = <p>{strings.steps[step].body}</p>
   if (step === 'load') return LOAD
-  if (step === 'crop') return createElement(CropStep, { faceId: cropFace })
+  if (step === 'crop') return createElement(CropStep, { faceId: cropFace, key: cropFace })
   if (step === 'print') return createElement(PrintStep, { error: printError })
   if (step === 'done') return createElement(DoneStep)
   return placeholder

@@ -16,7 +16,7 @@ const ok = (page: Page) => page.getByRole('button', { name: steps.crop.primary, 
 test('una cara por vez: frente, dorso y luego paso 3', async ({ page }) => {
   await openCrop(page)
   await expect(page.getByText(cropStep.faceCounter('Frente', 1, 2))).toBeVisible()
-  await expect(page.getByText(cropStep.instruction)).toBeVisible()
+  await expect(page.getByText(cropStep.notFound)).toBeVisible()
   await ok(page).click()
   await expect(page.getByText(cropStep.faceCounter('Dorso', 2, 2))).toBeVisible()
   await ok(page).click()

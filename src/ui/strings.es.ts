@@ -42,6 +42,8 @@ export const strings = {
   cropStep: {
     faceCounter: (face: string, index: number, total: number) => `${face} · ${index} de ${total}`,
     instruction: 'Marcá las cuatro esquinas del documento.',
+    notFound: 'No encontramos el documento. Marcá las cuatro esquinas.',
+    adjust: 'Ajustar esquinas',
     editorLabel: 'Editor de esquinas',
     resultLabel: 'Recorte enderezado',
     corners: [

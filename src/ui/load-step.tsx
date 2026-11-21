@@ -106,7 +106,10 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
       <h2 className="face-title">{label}</h2>
       <button type="button" className="face-area" onClick={() => galleryRef.current?.click()}>
         {face ? (
-          <Thumbnail bitmap={face.previewBitmap} label={strings.loadStep.thumbnailLabel(label)} />
+          <Thumbnail
+            bitmap={face.quadOrigin !== 'default' && face.rendered ? face.rendered : face.previewBitmap}
+            label={strings.loadStep.thumbnailLabel(label)}
+          />
         ) : null}
         <span className="face-status" role="status">
           {status === 'processing' && strings.loadStep.processing}

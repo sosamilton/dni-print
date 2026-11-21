@@ -1,10 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { Quad } from '../../src/core/index.ts'
 import { createSessionStore } from '../../src/ui/session-store.ts'
 import { fakeBitmap } from '../worker/fake-imaging.ts'
 
 const size = { widthPx: 800, heightPx: 600 }
 
 describe('session store', () => {
+  it('setDetectedQuad marks auto; resetQuad returns to it, else to default', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    const det: Quad = [{ x: 10, y: 10 }, { x: 700, y: 20 }, { x: 690, y: 500 }, { x: 20, y: 510 }]
+    s.getState().setDetectedQuad('front', det)
+    expect(s.getState().faces.front).toMatchObject({ quadOrigin: 'auto', quad: det, detectedQuad: det })
+    s.getState().setQuad('front', [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }])
+    expect(s.getState().faces.front!.quadOrigin).toBe('manual')
+    s.getState().resetQuad('front')
+    expect(s.getState().faces.front).toMatchObject({ quadOrigin: 'auto', quad: det })
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    s.getState().setQuad('front', [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }])
+    s.getState().resetQuad('front')
+    expect(s.getState().faces.front).toMatchObject({ quadOrigin: 'default', detectedQuad: null })
+  })
+
   it('assigns monotonic revs and closes replaced bitmaps', () => {
     const s = createSessionStore({ revokeUrl: () => {} })
     const p1 = fakeBitmap(10, 10)

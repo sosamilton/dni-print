@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { validateQuad } from '../core/index.ts'
 import type { FaceId } from '../worker/api.ts'
 import { BitmapCanvas } from './bitmap-canvas.tsx'
@@ -12,15 +13,33 @@ const CROP_ORDER: readonly FaceId[] = ['front', 'back']
 
 export function CropStep({ faceId }: { faceId: FaceId }) {
   const face = useSession((s) => s.faces[faceId])
+  const [adjusting, setAdjusting] = useState(false)
   if (!face) return null
   const index = CROP_ORDER.indexOf(faceId) + 1
   const valid = validateQuad(face.quad)
   const copy = strings.cropStep
 
+  if (face.quadOrigin === 'auto' && !adjusting) {
+    return (
+      <div className="crop-step">
+        <p className="crop-counter">{copy.faceCounter(strings.loadStep.faces[faceId], index, CROP_ORDER.length)}</p>
+        {face.rendered && valid && (
+          <BitmapCanvas bitmap={face.rendered} label={copy.resultLabel} className="crop-result" />
+        )}
+        {!face.rendered && <p role="status">{strings.loadStep.processing}</p>}
+        <div className="crop-actions">
+          <button type="button" className="crop-action" onClick={() => setAdjusting(true)}>
+            {copy.adjust}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="crop-step">
       <p className="crop-counter">{copy.faceCounter(strings.loadStep.faces[faceId], index, CROP_ORDER.length)}</p>
-      <p className="crop-instruction">{copy.instruction}</p>
+      <p className="crop-instruction">{face.quadOrigin === 'default' ? copy.notFound : copy.instruction}</p>
       <CornerEditor face={face} onCommit={(quad) => void pipeline.setQuad(faceId, quad)} />
       {!valid && (
         <p className="crop-message" data-kind="error" role="alert">

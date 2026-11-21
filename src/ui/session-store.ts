@@ -9,7 +9,9 @@ export interface FaceState {
   sourceSize: Size
   previewBitmap: BitmapLike
   quad: Quad
-  quadOrigin: 'default' | 'manual'
+  quadOrigin: 'default' | 'auto' | 'manual'
+  /** Quad found by the detector, if any; what "Restablecer" returns to. */
+  detectedQuad: Quad | null
   rotation: Rotation
   /** Revision of the inputs (quad, rotation, profile, face) this face currently has. */
   rev: number
@@ -30,8 +32,10 @@ export interface SessionActions {
   bindWorker(clearWorker: () => void | Promise<void>): void
   setFace(faceId: FaceId, input: { sourceSize: Size; previewBitmap: BitmapLike }): number
   setQuad(faceId: FaceId, quad: Quad): number | null
+  /** Stores a detected quad and makes it current (origin 'auto'). */
+  setDetectedQuad(faceId: FaceId, quad: Quad): number | null
   setRotation(faceId: FaceId, rotation: Rotation): number | null
-  /** Back to the initial quad (`defaultQuad`, origin 'default'); keeps the rotation. */
+  /** Back to the detected quad (origin 'auto') or, without one, `defaultQuad` (origin 'default'); keeps the rotation. */
   resetQuad(faceId: FaceId): number | null
   /** Returns the new rev of every affected face. */
   setProfile(profileId: string): Partial<Record<FaceId, number>>
@@ -94,6 +98,7 @@ export function createSessionStore(deps: SessionDeps) {
               previewBitmap,
               quad: defaultQuad(sourceSize.widthPx, sourceSize.heightPx),
               quadOrigin: 'default',
+              detectedQuad: null,
               rotation: 0,
               rev,
               rendered: null,
@@ -107,6 +112,10 @@ export function createSessionStore(deps: SessionDeps) {
         return patchFace(faceId, { quad, quadOrigin: 'manual' })
       },
 
+      setDetectedQuad(faceId, quad) {
+        return patchFace(faceId, { quad, quadOrigin: 'auto', detectedQuad: quad })
+      },
+
       setRotation(faceId, rotation) {
         return patchFace(faceId, { rotation })
       },
@@ -114,6 +123,7 @@ export function createSessionStore(deps: SessionDeps) {
       resetQuad(faceId) {
         const face = get().faces[faceId]
         if (!face) return null
+        if (face.detectedQuad) return patchFace(faceId, { quad: face.detectedQuad, quadOrigin: 'auto' })
         const { widthPx, heightPx } = face.sourceSize
         return patchFace(faceId, { quad: defaultQuad(widthPx, heightPx), quadOrigin: 'default' })
       },

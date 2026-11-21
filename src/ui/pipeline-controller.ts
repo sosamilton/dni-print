@@ -1,4 +1,5 @@
 // The only caller of the processing worker (AD-9). Tracks `rev` per face and drops stale answers.
+import { validateQuad } from '../core/index.ts'
 import type { Quad, Rotation } from '../core/index.ts'
 import type { DetectResult, FaceId, IngestResult, PdfResult, ProcessingApi } from '../worker/api.ts'
 import { sheetLayout } from './print-step-model.ts'
@@ -39,6 +40,14 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
     if (result.ok) store.getState().receiveRender(faceId, result.rev, result.face)
   }
 
+  async function detect(faceId: FaceId): Promise<DetectResult> {
+    try {
+      return await api.get().detect(faceId)
+    } catch {
+      return { ok: false, reason: 'detect-failed' }
+    }
+  }
+
   function clearSession(): void {
     ingestToken.front++
     ingestToken.back++
@@ -54,17 +63,20 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
         result.previewBitmap.close()
         return { ok: false, reason: 'superseded' }
       }
-      const rev = store.getState().setFace(faceId, result)
+      // Detect before the store sees the face, so step 2 never flashes the default crop.
+      const found = await detect(faceId)
+      if (token !== ingestToken[faceId]) {
+        result.previewBitmap.close()
+        return { ok: false, reason: 'superseded' }
+      }
+      let rev = store.getState().setFace(faceId, result)
+      if (found.ok && found.quad && validateQuad(found.quad)) {
+        rev = store.getState().setDetectedQuad(faceId, found.quad) ?? rev
+      }
       await render(faceId, rev)
       return result
     },
-    async detect(faceId: FaceId): Promise<DetectResult> {
-      try {
-        return await api.get().detect(faceId)
-      } catch {
-        return { ok: false, reason: 'detect-failed' }
-      }
-    },
+    detect,
     async setQuad(faceId: FaceId, quad: Quad): Promise<void> {
       const rev = store.getState().setQuad(faceId, quad)
       if (rev !== null) await render(faceId, rev)
