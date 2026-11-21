@@ -83,7 +83,10 @@ test.describe('guardia de red (CSP desactivada para ver todo intento)', () => {
     expect(guard.externalRequests()).toContain('https://example.com/')
   })
 
-  test('cordura: detecta un fetch externo desde un worker', async ({ page, guard }) => {
+  test('cordura: detecta un fetch externo desde un worker', async ({ page, guard, browserName }) => {
+    // Límite conocido, aceptado en la historia 1.4: en WebKit la guardia no ve el tráfico de
+    // workers (el fetch queda colgado sin resolverse ni fallar). Se cubre en Chromium y Firefox.
+    test.skip(browserName === 'webkit', 'Playwright/WebKit no entrega el tráfico de workers a la guardia')
     await page.goto('./')
     await expectTitle(page, strings.steps.load.title)
     // A string keeps DOM-only APIs (Worker, Blob) out of the Node type context.

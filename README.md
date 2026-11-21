@@ -95,6 +95,7 @@ Hace el build de producción, lo sirve con `vite preview` en `http://localhost:4
 - Un segundo recorrido con la CSP activa falla ante cualquier `securitypolicyviolation`.
 - Toda respuesta del propio origen con status ≥ 400 (por ejemplo, un asset pedido fuera del subpath) también hace fallar los recorridos. Para eso `vite.config.ts` usa `appType: 'mpa'`: como GitHub Pages, `vite preview` responde 404 a un archivo inexistente en vez de devolver `index.html`.
 - Tests de cordura inyectan un `fetch` externo (desde la página y desde un worker) y comprueban que la guardia lo detecta.
+- **Límite conocido en WebKit:** la guardia no demostró ver el tráfico de los workers en WebKit (el test de cordura del worker se omite ahí y en Chromium y Firefox sí corre). La app sigue cubierta por el recorrido completo en WebKit, por la CSP y por `npm run check:dist`; revisar este punto cuando haya más lógica de red-sensible en el worker.
 
 Para instalar los navegadores de Playwright y sus dependencias del sistema (una vez por máquina):
 
