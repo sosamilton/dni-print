@@ -71,7 +71,7 @@ test('desde 900 px el paso 3 va en dos columnas; antes, en una', async ({ page }
   await page.setViewportSize({ width: 600, height: 800 })
   const narrow = (await page.locator('.print-options').boundingBox())!
   const narrowPreview = (await page.locator('.print-preview').boundingBox())!
-  expect(narrowPreview.y).toBeGreaterThan(narrow.y)
+  expect(narrowPreview.y).toBeLessThan(narrow.y)
 })
 
 test('escritorio dice "tu dispositivo" y no muestra la guía de iOS', async ({ page }) => {

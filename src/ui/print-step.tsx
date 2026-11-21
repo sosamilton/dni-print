@@ -23,13 +23,13 @@ export function PrintStep({ error = false }: { error?: boolean }) {
     <div className="print-step" data-layout="columns">
       <div className="print-columns">
       <div className="print-options">
-      <div className="print-copies" role="group" aria-label={copy.copiesLabel}>
+      <div className="seg" role="group" aria-label={copy.copiesLabel}>
         {OPTIONS.map((n) => (
           <button
             key={n}
             type="button"
             aria-pressed={copies === n}
-            className="print-copies-option"
+            className="seg-option"
             data-selected={copies === n}
             onClick={() => sessionStore.getState().setCopies(n)}
           >
@@ -37,13 +37,13 @@ export function PrintStep({ error = false }: { error?: boolean }) {
           </button>
         ))}
       </div>
-      <div className="print-copies" role="group" aria-label={copy.filterLabel}>
+      <div className="seg" role="group" aria-label={copy.filterLabel}>
         {FACE_FILTERS.map((f) => (
           <button
             key={f}
             type="button"
             aria-pressed={filter === f}
-            className="print-copies-option"
+            className="seg-option"
             data-selected={filter === f}
             onClick={() => void pipeline.setFilter(f)}
           >
@@ -52,13 +52,14 @@ export function PrintStep({ error = false }: { error?: boolean }) {
         ))}
       </div>
       <label className="print-watermark-toggle">
+        <span>{copy.watermarkToggle}</span>
         <input
           type="checkbox"
           role="switch"
+          className="switch"
           checked={watermarkOn}
           onChange={(e) => void pipeline.setWatermarkOn(e.target.checked)}
         />
-        {copy.watermarkToggle}
       </label>
       {watermarkOn && (
         <input
@@ -86,7 +87,7 @@ export function PrintStep({ error = false }: { error?: boolean }) {
           />
         </label>
       </details>
-      <p className="print-notice">{copy.notice}</p>
+      <p className="print-notice hint">{copy.notice}</p>
       {error && (
         <p className="print-error" role="alert">
           {copy.failed}

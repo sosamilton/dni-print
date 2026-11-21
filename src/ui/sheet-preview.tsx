@@ -70,7 +70,7 @@ export function SheetPreview({
       <line x1={ruler.xMm} x2={ruler.xMm + ruler.lengthMm} y1={ruler.yMm} y2={ruler.yMm} stroke="#000000" strokeWidth={0.4} />
       <line x1={ruler.xMm} x2={ruler.xMm} y1={ruler.yMm - 2} y2={ruler.yMm + 2} stroke="#000000" strokeWidth={0.4} />
       <line x1={ruler.xMm + ruler.lengthMm} x2={ruler.xMm + ruler.lengthMm} y1={ruler.yMm - 2} y2={ruler.yMm + 2} stroke="#000000" strokeWidth={0.4} />
-      <text x={ruler.xMm + ruler.lengthMm / 2} y={ruler.yMm - 3} fontSize={4} textAnchor="middle" fill="#000000">
+      <text x={ruler.xMm + ruler.lengthMm / 2} y={ruler.yMm - 3} fontSize={5} textAnchor="middle" fill="#2a3640">
         {strings.printStep.rulerLabel}
       </text>
     </svg>
