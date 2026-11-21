@@ -9,10 +9,10 @@ export interface CameraDialogProps {
 
 /** Live webcam preview (desktop): the browser asks for permission, then "Sacar" grabs one frame. */
 export function CameraDialog({ onClose }: CameraDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const dialogRef = useRef(null as HTMLDialogElement | null)
+  const videoRef = useRef(null as HTMLVideoElement | null)
+  const streamRef = useRef(null as MediaStream | null)
+  const [error, setError] = useState(null as string | null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -60,11 +60,12 @@ export function CameraDialog({ onClose }: CameraDialogProps) {
       <h2 id="camera-dialog-title" className="camera-dialog-title">
         {strings.camera.title}
       </h2>
-      {error ? (
+      {error && (
         <p className="camera-dialog-error" role="alert">
           {error}
         </p>
-      ) : (
+      )}
+      {!error && (
         <video ref={videoRef} className="camera-dialog-video" playsInline muted aria-label={strings.camera.previewLabel} />
       )}
       <div className="camera-dialog-actions">

@@ -116,14 +116,13 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
         aria-label={strings.loadStep.faceAreaLabel(label, strings.loadStep.faceStates[status])}
         onClick={() => galleryRef.current?.click()}
       >
-        {face ? (
+        {face && (
           <Thumbnail
             bitmap={face.quadOrigin !== 'default' && face.rendered ? face.rendered : face.previewBitmap}
             label={strings.loadStep.thumbnailLabel(label)}
           />
-        ) : (
-          <span className="face-placeholder" aria-hidden="true" />
         )}
+        {!face && <span className="face-placeholder" aria-hidden="true" />}
         <span className="face-text">
           {!face && <span className="face-name" aria-hidden="true">{label}</span>}
           <span className="face-status" role="status">

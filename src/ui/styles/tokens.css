@@ -75,6 +75,17 @@
   --progress-rounded: 3px;
   --hairline: 1px;
   --hit-area: 44px;
+  --face-thumb-width: 92px;
+  --face-thumb-height: 58px;
+  --preview-max-width: 220px;
+  --switch-width: 42px;
+  --switch-height: 24px;
+  --switch-knob: 18px;
+  --switch-inset: 3px;
+  --font-small-size: 13px;
+  --font-form-size: 16px;
+  --shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-sheet: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
