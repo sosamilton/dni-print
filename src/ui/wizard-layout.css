@@ -1,0 +1,103 @@
+.wizard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--column-max);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 0 var(--margin-mobile);
+}
+
+.wizard-header {
+  padding-top: var(--spacing-3);
+}
+
+.wizard-header-bar {
+  display: flex;
+  align-items: center;
+  min-height: var(--hit-area);
+}
+
+.wizard-back {
+  min-height: var(--hit-area);
+  padding: 0 var(--spacing-2);
+  margin-left: calc(-1 * var(--spacing-2));
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-label-family);
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  line-height: var(--font-label-line-height);
+  cursor: pointer;
+}
+
+.wizard-progress {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+}
+
+.wizard-progress-segment {
+  height: var(--progress-height);
+  border-radius: var(--progress-rounded);
+  background: var(--color-border-hairline);
+}
+
+.wizard-progress-segment[data-filled='true'] {
+  background: var(--color-accent);
+}
+
+.wizard-counter {
+  margin: var(--spacing-3) 0 0;
+  color: var(--color-ink-secondary);
+  font-family: var(--font-meta-family);
+  font-size: var(--font-meta-size);
+  font-weight: var(--font-meta-weight);
+  line-height: var(--font-meta-line-height);
+}
+
+.wizard-title {
+  margin: var(--spacing-2) 0 0;
+  font-family: var(--font-title-family);
+  font-size: var(--font-title-size);
+  font-weight: var(--font-title-weight);
+  line-height: var(--font-title-line-height);
+  overflow-wrap: anywhere;
+}
+
+.wizard-body {
+  flex: 1;
+  padding: var(--spacing-5) 0;
+  overflow-wrap: anywhere;
+}
+
+.wizard-body p {
+  margin: 0;
+}
+
+.wizard-footer {
+  position: sticky;
+  bottom: 0;
+  padding: var(--spacing-4) 0 var(--spacing-5);
+  background: var(--color-surface-base);
+}
+
+.button-primary {
+  display: block;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--button-padding);
+  border: 0;
+  border-radius: var(--rounded-lg);
+  background: var(--color-accent);
+  color: var(--color-surface-raised);
+  font-family: var(--font-button-family);
+  font-size: var(--font-button-size);
+  font-weight: var(--font-button-weight);
+  line-height: var(--font-button-line-height);
+  cursor: pointer;
+}

@@ -1,0 +1,85 @@
+/*
+ * Design tokens from DESIGN.md (frontmatter). This is the only stylesheet
+ * allowed to hold raw values; every other stylesheet uses var(--…).
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* colors */
+  --color-surface-base: #FBFAF7;
+  --color-surface-raised: #FFFFFF;
+  --color-ink-primary: #1D2730;
+  --color-ink-secondary: #6B7782;
+  --color-accent: #2563A8;
+  --color-accent-soft: #E6EEF7;
+  --color-border-hairline: #E2E0DA;
+  --color-placeholder: #ECEAE4;
+  --color-warning: #9A5B00;
+  --color-danger: #B3261E;
+
+  /* typography */
+  --font-title-family: 'Familjen Grotesk', system-ui, sans-serif;
+  --font-title-size: 24px;
+  --font-title-weight: 700;
+  --font-title-line-height: 1.15;
+
+  --font-body-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-body-size: 17px;
+  --font-body-weight: 400;
+  --font-body-line-height: 1.5;
+
+  --font-label-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-label-size: 15px;
+  --font-label-weight: 700;
+  --font-label-line-height: 1.3;
+
+  --font-meta-family: 'JetBrains Mono', ui-monospace, monospace;
+  --font-meta-size: 12px;
+  --font-meta-weight: 400;
+  --font-meta-line-height: 1.4;
+
+  --font-button-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-button-size: 17px;
+  --font-button-weight: 700;
+  --font-button-line-height: 1.2;
+
+  /* rounded */
+  --rounded-sm: 9px;
+  --rounded-md: 12px;
+  --rounded-lg: 14px;
+  --rounded-xl: 16px;
+  --rounded-full: 9999px;
+
+  /* spacing */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 32px;
+  --column-max: 480px;
+  --margin-mobile: 20px;
+
+  /* components */
+  --button-padding: 15px;
+  --button-min-height: 52px;
+  --progress-height: 5px;
+  --progress-rounded: 3px;
+  --hairline: 1px;
+  --hit-area: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface-base: #12181D;
+    --color-surface-raised: #1B232A;
+    --color-ink-primary: #E8EDF0;
+    --color-ink-secondary: #9AA7B1;
+    --color-accent: #7DB0E8;
+    --color-accent-soft: #1C2E42;
+    --color-border-hairline: #2B353D;
+    --color-placeholder: #242D34;
+  }
+}

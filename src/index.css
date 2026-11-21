@@ -1,15 +1,21 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: var(--color-surface-base);
+  color: var(--color-ink-primary);
+  font-family: var(--font-body-family);
+  font-size: var(--font-body-size);
+  font-weight: var(--font-body-weight);
+  line-height: var(--font-body-line-height);
+  -webkit-text-size-adjust: 100%;
 }
 
-#root {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 20px;
+button {
+  font: inherit;
+  color: inherit;
 }
