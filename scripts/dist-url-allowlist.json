@@ -44,5 +44,6 @@
   {"url": "http://www.w3.org/1999/02/22-rdf-syntax-ns#", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
   {"url": "http://www.w3.org/1999/xhtml", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
   {"url": "http://www.yworks.com", "match": "exact", "reason": "Cadena embebida en jsPDF, core-js o DOMPurify (crédito, licencia o namespace); el código nunca la pide."},
+  {"url": "https://wa.me/", "match": "prefix", "reason": "Enlace de WhatsApp: navegación iniciada por el usuario al tocar Abrir chat; la app no hace la petición."},
   {"url": "https://github.com/opencv/opencv/issues/16739", "match": "exact", "reason": "Comentario en el glue de emscripten de OpenCV.js (chunk del build opencv); el código nunca la pide."}
 ]

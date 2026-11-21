@@ -120,6 +120,17 @@ describe('session store pdf bytes', () => {
   })
 })
 
+describe('session store whatsapp number', () => {
+  it('starts empty, keeps what was typed, and clears it on clearSession', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    expect(s.getState().whatsappNumber).toBe('')
+    s.getState().setWhatsappNumber('011 15 2345-6789')
+    expect(s.getState().whatsappNumber).toBe('011 15 2345-6789')
+    s.getState().clearSession()
+    expect(s.getState().whatsappNumber).toBe('')
+  })
+})
+
 describe('session store filter', () => {
   it('defaults to color, bumps no revs when unchanged, and resets on clear', () => {
     const s = createSessionStore({ revokeUrl: () => {} })

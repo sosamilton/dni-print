@@ -16,4 +16,10 @@ describe('privacy menu copy', () => {
     expect(text).toMatch(/se borran/)
     expect(text).toContain('AGPL-3.0')
   })
+
+  it('says sharing or sending by WhatsApp is the user\'s decision', () => {
+    const text = strings.privacyDialog.paragraphs.join(' ')
+    expect(text).toMatch(/WhatsApp/)
+    expect(text).toMatch(/lo decidís vos/)
+  })
 })

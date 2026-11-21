@@ -27,6 +27,7 @@ export const strings = {
     paragraphs: [
       'Todo se procesa en tu dispositivo, dentro del navegador. No hay cuentas ni servidores.',
       'Las fotos no se guardan ni se envían a ningún lado. Al cerrar la app, se borran.',
+      'Compartir el PDF o mandarlo por WhatsApp lo decidís vos: la app solo abre el menú de compartir o el chat cuando lo tocás.',
       'DNI Print es software libre, con licencia AGPL-3.0. El código fuente está en el menú ⋮, en «Código fuente».',
     ],
   },
@@ -112,6 +113,18 @@ export const strings = {
       'Tocá el botón Compartir.',
       'Elegí Imprimir, o guardalo en otra app.',
     ],
+    whatsapp: {
+      toggle: 'Enviar por WhatsApp a un número',
+      label: 'Número de WhatsApp',
+      hint: 'Con código de área, por ejemplo 11 2345 6789',
+      submit: 'Abrir chat de WhatsApp',
+      message: 'Hola, te paso un documento para imprimir a tamaño real.',
+      empty: 'Escribí el número de WhatsApp.',
+      invalid: 'Revisá el número: tiene que ser de Argentina, con código de área, por ejemplo 11 2345 6789.',
+      stepOpenChat: 'Mandá el mensaje para abrir el chat.',
+      stepShare: 'Volvé y tocá Compartir PDF: el chat aparece primero en WhatsApp.',
+      stepAttach: 'Volvé y adjuntá en el chat el PDF descargado.',
+    },
   },
   steps: {
     load: {

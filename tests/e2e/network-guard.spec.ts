@@ -46,6 +46,12 @@ async function walkThroughApp(page: Page) {
   await clickPrimary(page, steps.print.primary)
   await expectTitle(page, steps.done.title)
 
+  // WhatsApp panel: showing the field and typing a number makes no requests. Submitting opens
+  // wa.me in a new tab by the user's decision (a navigation, not an app request); that is
+  // covered in whatsapp.spec.ts.
+  await page.getByRole('button', { name: strings.doneStep.whatsapp.toggle }).click()
+  await page.getByLabel(strings.doneStep.whatsapp.label).fill('11 2345 6789')
+
   // Menu: open the privacy dialog; "Código fuente" is only checked, never followed (it leaves the origin).
   await page.getByRole('button', { name: menu.buttonLabel }).click()
   await expect(page.getByText(menu.sourceCode, { exact: false }).first()).toBeVisible()
