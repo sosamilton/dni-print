@@ -1,177 +1,71 @@
 # DNI Print
 
-Aplicación web para imprimir tu DNI a tamaño real desde el navegador. Todo se procesa en tu dispositivo: no hay servidor, no hay cuentas y no se envía ningún dato.
+[![CI](https://github.com/sosamilton/dni-print/actions/workflows/deploy.yml/badge.svg)](https://github.com/sosamilton/dni-print/actions/workflows/deploy.yml)
+[![Licencia: AGPL v3](https://img.shields.io/badge/licencia-AGPL--3.0-blue.svg)](LICENSE)
 
-## Requisitos
+Aplicación web para imprimir un DNI o una licencia de conducir argentinos **a tamaño real** en una hoja A4, a partir de fotos tomadas con el celular o la webcam. Funciona completamente en el navegador: no hay servidor, no hay cuentas y las fotos nunca salen del dispositivo.
 
-- Node.js 24 (LTS) y npm.
+## El problema
 
-## Instalación
+Fotocopiar un documento es incómodo, y imprimir una foto casual sale torcida, con fondo, en proporciones erróneas y a un tamaño que no es el del plástico. Muchos trámites piden una copia legible y del tamaño real, con frente y dorso en la misma hoja.
 
-```bash
-npm ci
+DNI Print resuelve ese flujo: carga las dos caras, las recorta y endereza, y arma un PDF A4 donde cada cara mide exactamente **85,6 × 54 mm** (formato ID-1, el de las tarjetas plásticas).
+
+## Cómo funciona
+
+Un asistente de tres pasos:
+
+1. **Cargar.** Se elige el documento y se carga el frente y el dorso desde la galería, la cámara del teléfono o la webcam.
+2. **Revisar el recorte.** Se detectan automáticamente las cuatro esquinas del documento. Si el recorte no es correcto, se arrastran las esquinas con una lupa de precisión.
+3. **Imprimir.** Se elige 1 o 2 copias (frente y dorso por copia), color, blanco y negro o ahorro de tinta, una marca de agua opcional y los márgenes. El resultado es un PDF de una hoja A4.
+
+Detrás de cada paso hay un pipeline de procesamiento:
+
+```text
+foto → detección de esquinas → rectificación (homografía) → escala física → filtros → PDF A4
 ```
 
-## Comandos
+- La **rectificación** corrige la perspectiva con una homografía propia, y renderiza la cara a 300 DPI en milímetros reales.
+- El **PDF** se genera con `jsPDF` y pide imprimir sin escalado. Incluye una **regla de 100 mm** de calibración para comprobar en papel que la escala es exacta.
+- La detección de esquinas usa [`scanic`](https://github.com/marquaye/scanic) por defecto, con [OpenCV.js](https://github.com/TechStark/opencv-js) como motor alternativo en tiempo de compilación.
 
-| Comando | Qué hace |
-| --- | --- |
-| `npm run dev` | Levanta el servidor de desarrollo de Vite. |
-| `npm run lint` | Corre oxlint sobre el proyecto. |
-| `npm run test` | Corre los tests unitarios y de arquitectura con Vitest. |
-| `npm run build` | Chequea tipos (`tsc -b`) y genera el build de producción en `dist/`. |
-| `npm run preview` | Sirve localmente el build de `dist/`. |
-| `npm run test:e2e` | Hace el build y corre la guardia de red de Playwright (ver "Privacidad verificable"). |
-| `npm run check:dist` | Revisa que `dist/` no tenga URLs fuera de la allowlist. |
-| `npm run compare-engines` | Corre `scanic` y `opencv` en Chromium sobre `corpus/` (o `tests/fixtures/` si está vacío) y escribe `docs/engine-comparison.md`. |
-| `npm run check:licenses` | Revisa las licencias de las dependencias de producción. |
+## Principios
 
-## Estructura
+- **Privacidad por diseño y verificable.** Todo se procesa en el dispositivo y la sesión es efímera (nada se guarda). La promesa no se declara: se comprueba con una política CSP estricta, una guardia de red en los tests e2e que falla ante cualquier request a otro origen, y un análisis del build que rechaza URLs no permitidas.
+- **Escala exacta.** El tamaño físico es un invariante del núcleo, no un detalle de la interfaz: el diseño de la hoja es una función pura en milímetros, con tests propios.
+- **Sin backend.** Es un sitio estático. Funciona sin conexión una vez instalado como PWA, y avisa cuando hay una versión nueva sin interrumpir.
+- **Pensada para cualquiera.** Interfaz en español rioplatense, accesible y usable desde el celular o desde pantallas anchas.
+- **Software libre.** Licencia AGPL-3.0; la app ofrece un enlace al código fuente exacto de la versión que se sirve. Las dependencias se verifican contra una lista de licencias permitidas.
+
+## Arquitectura
+
+Pipes and filters, con un núcleo puro y capas que se verifican con un test:
 
 ```text
 src/
-  core/      núcleo puro: geometría, perfiles, layout, PDF (sin React, DOM ni estado global)
-  engines/   puerto DetectionEngine y sus adaptadores
-  worker/    contrato del worker (api.ts) y worker de procesamiento
-  ui/        componentes, estado y textos (strings.es.ts)
-tests/
-  architecture/  test que hace cumplir la regla de capas
-  e2e/           guardia de red con Playwright
-  scripts/       tests de los checks de scripts/
-  fixtures/      imágenes sintéticas para tests
+  core/      geometría, perfiles de documento, layout y PDF (sin React, DOM ni estado global)
+  engines/   puerto DetectionEngine y adaptadores (scanic, opencv)
+  worker/    worker de procesamiento (Comlink): ingesta, detección, render y PDF
+  ui/        componentes React, estado de sesión (zustand) y textos
 ```
 
-### Regla de dependencias entre capas
+Las fotos de alta resolución viven solo en el worker; la interfaz recibe miniaturas y resultados. Los perfiles de documento son datos (hoy DNI y licencia, ambos ID-1), de modo que agregar otro formato no requiere tocar el pipeline.
 
-- `core` no importa de `ui` ni de `engines`.
-- `ui` no importa de `engines`.
-- Permitido: `ui → core, worker/api`; `worker → core, engines`; `engines → core`.
+**Stack:** React, TypeScript, Vite (con `vite-plugin-pwa`), jsPDF, zustand, Comlink; pruebas con Vitest y Playwright (Chromium, Firefox y WebKit).
 
-La regla se verifica con `tests/architecture/layer-rules.test.ts`: si un import la rompe, `npm run test` falla.
+## Desarrollo
 
-Todos los textos visibles están en `src/ui/strings.es.ts`, en español rioplatense.
-
-## Diseño y fuentes
-
-- Los tokens de diseño (colores, tipografía, radios, espaciados y medidas de componentes) salen de `DESIGN.md` y viven como variables CSS en `src/ui/styles/tokens.css`, con los colores de modo oscuro bajo `prefers-color-scheme: dark`. En el resto del CSS, colores, fuentes, tamaños de letra, radios y longitudes salen solo de `var(--…)`; `tests/ui/design-tokens.test.ts` lo verifica.
-- Las fuentes (Familjen Grotesk, Atkinson Hyperlegible y JetBrains Mono) se sirven como `woff2` desde el propio sitio, en `public/fonts/`, bajo la licencia SIL Open Font License 1.1 (un `OFL-*.txt` por familia). No se carga nada desde CDNs ni Google Fonts.
-
-## Código fuente
-
-La licencia AGPL-3.0 pide ofrecer el código fuente de la versión que se sirve. Por eso el menú ⋮ de la app tiene un enlace "Código fuente" que apunta a `<URL del repo>/tree/<SHA del commit>`. El build calcula los dos valores (`scripts/build-info.ts`) y los inyecta en el JS:
-
-| Valor | Precedencia (gana el primero que exista y sea válido) |
-| --- | --- |
-| SHA del commit | `VITE_COMMIT_SHA` → `GITHUB_SHA` → `git rev-parse HEAD` → sin SHA |
-| URL del repo | `VITE_REPO_URL` → `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}` → remoto `origin` de git → sin URL |
-
-- El enlace usa el formato `/tree/<SHA>` de GitHub; en otros hosts puede no funcionar.
-- La URL se normaliza a `https://host/dueño/repo` (sin `.git` ni barra final; un remoto SSH `git@host:dueño/repo.git` se convierte a `https://`). Cualquier URL que no sea `https://` se descarta.
-- Sin SHA, el enlace apunta a la raíz del repo. Sin URL, el item "Código fuente" se muestra deshabilitado con "No disponible en esta versión"; el build no falla.
-- En GitHub Actions no hace falta configurar nada: las variables `GITHUB_*` ya están definidas. Para forzar valores en un build local:
+Requiere Node.js 24 y npm.
 
 ```bash
-VITE_REPO_URL=https://github.com/dueño/repo VITE_COMMIT_SHA=$(git rev-parse HEAD) npm run build
+npm ci
+npm run dev      # servidor de desarrollo
+npm test         # tests unitarios y de arquitectura
+npm run lint
+npm run test:e2e # build + guardia de red y flujos completos (Playwright)
 ```
 
-## Privacidad verificable
-
-La promesa "nada sale de tu dispositivo" se verifica con una política de seguridad y tres checks automáticos. Los tres terminan con código distinto de 0 si encuentran un problema.
-
-### Content-Security-Policy
-
-`index.html` declara la CSP de AD-7 en un `<meta http-equiv="Content-Security-Policy">`, justo después de `<meta charset>`:
-
-```text
-default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; img-src 'self' blob: data:; worker-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'
-```
-
-El build y `npm run preview` la sirven intacta. Solo `npm run dev` la quita (plugin `strip-csp-in-dev` en `vite.config.ts`), porque el preámbulo inline de React Refresh la viola. `tests/ui/csp.test.ts` verifica que la política sea exactamente esa. No se cambia la CSP para que la app pase: se arregla la app.
-
-### Motor de detección (`VITE_DETECTION_ENGINE`)
-
-`scanic` (por defecto) o `opencv` (@techstark/opencv-js, single-thread, wasm embebido). Se resuelve en compilación: el bundle lleva un solo motor.
-
-```bash
-VITE_DETECTION_ENGINE=opencv npm run build && npm run check:dist
-```
-
-El build `opencv` suma un chunk propio de ~15 MB (mismo origen, cargado dentro del worker), agrega `'unsafe-eval'` a `script-src` (plugin `engineCsp` en `vite.config.ts`; el build `scanic` conserva AD-7 intacta) y fija el límite de precache en 16 MiB (`precacheOptions`, que reutilizará la historia 5.2). El CI corre lint, tests, build, `check:dist` y el e2e para ambos motores; solo `scanic` se publica en Pages.
-
-### Guardia de red (`npm run test:e2e`)
-
-Hace el build de producción, lo sirve con `vite preview` en `http://localhost:4173` (más el base de `VITE_BASE`, ver "Publicación en GitHub Pages") y, en Chromium, Firefox y WebKit, recorre los cuatro pasos, "Atrás", el menú ⋮ y el diálogo de privacidad (`tests/e2e/network-guard.spec.ts`):
-
-- La guardia (`tests/e2e/network-guard.ts`) registra todo request de la página y los workers (y de los service workers solo en Chromium, porque Playwright no reporta su tráfico en Firefox ni WebKit; hoy la app no tiene service worker), y aborta los que van a otro origen (también websockets): nunca salen. Corre con la CSP desactivada para ver lo que la app *intenta*, aunque la CSP lo bloquearía.
-- Un segundo recorrido con la CSP activa falla ante cualquier `securitypolicyviolation`.
-- Toda respuesta del propio origen con status ≥ 400 (por ejemplo, un asset pedido fuera del subpath) también hace fallar los recorridos. Para eso `vite.config.ts` usa `appType: 'mpa'`: como GitHub Pages, `vite preview` responde 404 a un archivo inexistente en vez de devolver `index.html`.
-- Tests de cordura inyectan un `fetch` externo (desde la página y desde un worker) y comprueban que la guardia lo detecta.
-- **Límite conocido en WebKit:** la guardia no demostró ver el tráfico de los workers en WebKit (el test de cordura del worker se omite ahí y en Chromium y Firefox sí corre). La app sigue cubierta por el recorrido completo en WebKit, por la CSP y por `npm run check:dist`; revisar este punto cuando haya más lógica de red-sensible en el worker.
-
-Para instalar los navegadores de Playwright y sus dependencias del sistema (una vez por máquina):
-
-```bash
-npx playwright install --with-deps
-```
-
-Para correr un solo navegador (con el build ya hecho): `npx playwright test --project=chromium`.
-
-### URLs en el build (`npm run check:dist`)
-
-Busca toda URL `http(s)://` en los archivos de `dist/` (o del directorio de `DIST_DIR`) y falla con el archivo y la URL si no está permitida. Corré `npm run build` antes.
-
-- La URL del repositorio que usa "Código fuente" se permite sola: el check la calcula con `scripts/build-info.ts` y las mismas variables de entorno que el build. Por eso hay que correrlo con el mismo entorno que `npm run build`.
-- El resto vive en `scripts/dist-url-allowlist.json`. Solo se agregan URLs que no generan requests (namespaces XML, textos de error o de licencia). Cada entrada es `{ "url", "match", "reason" }`, con `match` en `"exact"` (la URL tal cual) o `"prefix"` (toda URL que empiece así) y el motivo en `reason`.
-
-### Comparación de motores (`npm run compare-engines`)
-
-Mide, por imagen y motor, si detectó, el tiempo y el error medio de esquinas contra `<nombre>.quad.json` (`[[x,y]×4]` TL, TR, BR, BL en px de la fuente) si existe junto a la imagen. Usa `corpus/` o, si no tiene imágenes, `tests/fixtures/`. El reporte `docs/engine-comparison.md` identifica las imágenes solo como `imagen 1…n` y deja la sección «Decisión» para una persona. El valor por defecto de `VITE_DETECTION_ENGINE` es `scanic` hasta que esa decisión diga otra cosa.
-
-### Licencias (`npm run check:licenses`)
-
-Lee las dependencias de producción de `package-lock.json` (las que no son `dev`) y la licencia del `package.json` instalado de cada una. Las que no están instaladas en esta plataforma (opcionales) se saltean.
-
-- Allowlist (AD-13): MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, AGPL-3.0 y GPL-3.0 (con sus variantes `-only`, `-or-later` y `+`).
-- Expresiones SPDX: `OR` pasa si alguna opción pasa; `AND`, solo si pasan todas. `WITH`, `SEE LICENSE IN`, licencias desconocidas o ausentes no pasan.
-- Excepciones revisadas en `scripts/license-exceptions.json`: `{ "package", "version", "license", "reason" }`. Aplican solo si coinciden el nombre, la versión y la licencia exactos, así que cualquier actualización vuelve a pedir revisión. Hoy hay una: `pako@2.2.0` con `(MIT AND Zlib)`, que jsPDF necesita; Zlib es permisiva y compatible con AGPL-3.0. Antes de agregar otra, confirmá que la licencia sea compatible con AGPL-3.0 y explicá por qué en `reason`.
-
-## Publicación en GitHub Pages
-
-El workflow `.github/workflows/deploy.yml` ("CI y publicación") corre en GitHub Actions:
-
-- **En cada push a `main` y en cada pull request:** `npm ci`, instala los navegadores de Playwright y corre, en este orden, `npm run lint`, `npm run test`, `npm run check:licenses`, `npm run build`, `npm run check:dist` y la guardia de red (`npx playwright test`, en Chromium, Firefox y WebKit) sobre ese mismo build. Se hace **un solo build**: el `dist/` que pasa `check:dist` y el e2e es exactamente el que se publica. Si el e2e falla, el reporte de Playwright queda como artefacto `playwright-report` de la corrida.
-- **Solo en push a `main` y con todo en verde:** sube ese `dist/` y lo publica en Pages (job `deploy`, entorno `github-pages`). Los pull requests nunca publican. No hay staging ni previews.
-
-### Activar Pages (una vez)
-
-1. En el repo, **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. Hacé push a `main`: solo un push a `main` publica. Una corrida manual (**Actions → CI y publicación → Run workflow**) solo corre los checks, no publica. La URL publicada aparece en el job `deploy` y en **Settings → Pages**.
-
-### Base del sitio (`VITE_BASE`)
-
-Vite arma las rutas de scripts, estilos, ícono y fuentes con `base`, que sale de `VITE_BASE` (`vite.config.ts`, normalizado por `resolveBase` en `scripts/build-info.ts`):
-
-- En Actions, por defecto vale `/<nombre-del-repo>/`, la ruta de un *project site* (`https://<usuario>.github.io/<repo>/`).
-- Para cambiarlo sin tocar el YAML, creá la variable de repo `VITE_BASE` en **Settings → Secrets and variables → Actions → Variables**. Por ejemplo `/` para un dominio propio o para el repo `<usuario>.github.io`.
-- Sin `VITE_BASE` (desarrollo local) el base es `/`. Se aceptan valores con o sin barras (`dni-print`, `/dni-print`, `//dni-print//` → `/dni-print/`) y subpaths anidados (`/a/b/`). Un valor inválido (una URL completa, `./`, espacios, `..`, `?`…) hace fallar el build con `VITE_BASE inválido: …`.
-
-Para probar localmente el build tal como se publica bajo un subpath (Playwright y `vite preview` usan el mismo base):
-
-```bash
-VITE_BASE=/dni-print/ npm run build
-VITE_BASE=/dni-print/ npx playwright test   # sirve en http://localhost:4173/dni-print/
-```
-
-### Rollback
-
-El rollback es **redesplegar el commit anterior**:
-
-- Desde **Actions**, abrí la corrida de "CI y publicación" del commit bueno (un push a `main`) y usá **Re-run all jobs**: vuelve a construir, verificar y publicar ese commit. Límites: GitHub solo permite re-correr corridas de hasta 30 días, y la re-corrida usa el workflow de ese commit pero las variables de repo actuales (por ejemplo, `VITE_BASE`).
-- O revertí el cambio y hacé push: `git revert <sha> && git push`. Esto funciona siempre: el workflow publica el resultado como cualquier otro push.
-
-## Fotos reales
-
-La carpeta `corpus/` es para fotos reales de documentos y está en `.gitignore`: **nunca se commitea**, porque el repositorio es público. Los tests usan solo imágenes sintéticas de `tests/fixtures/`.
+Más detalle (comandos, verificaciones de privacidad, licencias, comparación de motores) en la [guía de desarrollo](docs/DEVELOPMENT.md).
 
 ## Licencia
 
