@@ -107,3 +107,32 @@
   color: var(--color-ink-secondary);
   cursor: not-allowed;
 }
+
+.wizard-update {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-left: auto;
+  color: var(--color-ink-secondary);
+  font-family: var(--font-meta-family);
+  font-size: var(--font-meta-size);
+  line-height: var(--font-meta-line-height);
+}
+
+.wizard-update-action {
+  min-width: var(--hit-area);
+  min-height: var(--hit-area);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-label-family);
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  cursor: pointer;
+}
+
+.wizard-update + .app-menu {
+  margin-left: 0;
+}

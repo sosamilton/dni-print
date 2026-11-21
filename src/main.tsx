@@ -6,10 +6,15 @@ import './index.css'
 import { App } from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 import { startPipeline } from './ui/pipeline.ts'
+import { updatePrompt } from './ui/update-prompt.ts'
 
 startPipeline()
 // Registers the SW (precache only). `prompt` mode: it never reloads the page by itself.
-registerSW({ immediate: true })
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh: () => updatePrompt.notify(() => updateSW(true)),
+  onRegisterError: () => {},
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -7,6 +7,10 @@ export const strings = {
     stepCounter: (step: number, total: number) => `Paso ${step} de ${total}`,
     progressLabel: 'Avance del asistente',
   },
+  update: {
+    available: 'Hay una versión nueva.',
+    action: 'Actualizar',
+  },
   menu: {
     button: '⋮',
     buttonLabel: 'Más opciones',

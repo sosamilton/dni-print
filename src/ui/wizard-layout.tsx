@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useSyncExternalStore, type ReactNode } from 'react'
+import { updatePrompt } from './update-prompt.ts'
 import { AppMenu } from './app-menu.tsx'
 import { strings } from './strings.es.ts'
 import { STEP_COUNT } from './wizard-steps.ts'
@@ -29,6 +30,7 @@ export function WizardLayout({
   onRestart,
   children,
 }: WizardLayoutProps) {
+  const updateAvailable = useSyncExternalStore(updatePrompt.subscribe, updatePrompt.getSnapshot)
   return (
     <div className="wizard">
       <header className="wizard-header">
@@ -37,6 +39,14 @@ export function WizardLayout({
             <button type="button" className="wizard-back" onClick={onBack}>
               {strings.wizard.back}
             </button>
+          )}
+          {updateAvailable && (
+            <div className="wizard-update" role="status">
+              <span>{strings.update.available}</span>
+              <button type="button" className="wizard-update-action" onClick={() => void updatePrompt.update()}>
+                {strings.update.action}
+              </button>
+            </div>
           )}
           <AppMenu onRestart={onRestart} />
         </div>
