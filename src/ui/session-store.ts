@@ -30,6 +30,8 @@ export interface SessionActions {
   setFace(faceId: FaceId, input: { sourceSize: Size; previewBitmap: BitmapLike }): number
   setQuad(faceId: FaceId, quad: Quad): number | null
   setRotation(faceId: FaceId, rotation: Rotation): number | null
+  /** Back to the initial quad (`defaultQuad`, origin 'default'); keeps the rotation. */
+  resetQuad(faceId: FaceId): number | null
   /** Returns the new rev of every affected face. */
   setProfile(profileId: string): Partial<Record<FaceId, number>>
   /** Stores a render if its rev is current; otherwise closes it. True when stored. */
@@ -100,6 +102,13 @@ export function createSessionStore(deps: SessionDeps) {
 
       setRotation(faceId, rotation) {
         return patchFace(faceId, { rotation })
+      },
+
+      resetQuad(faceId) {
+        const face = get().faces[faceId]
+        if (!face) return null
+        const { widthPx, heightPx } = face.sourceSize
+        return patchFace(faceId, { quad: defaultQuad(widthPx, heightPx), quadOrigin: 'default' })
       },
 
       setProfile(profileId) {

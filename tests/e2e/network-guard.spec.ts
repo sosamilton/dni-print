@@ -41,6 +41,7 @@ async function walkThroughApp(page: Page) {
   await clickPrimary(page, steps.load.primary)
   await expectTitle(page, steps.crop.title)
   await clickPrimary(page, steps.crop.primary)
+  await clickPrimary(page, steps.crop.primary)
   await expectTitle(page, steps.print.title)
   await clickPrimary(page, steps.print.primary)
   await expectTitle(page, steps.done.title)

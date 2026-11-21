@@ -1,0 +1,9 @@
+.crop-step { display: flex; flex-direction: column; gap: var(--spacing-3); padding-bottom: var(--spacing-4); }
+.crop-counter { margin: 0; font-family: var(--font-label-family); font-size: var(--font-label-size); font-weight: var(--font-label-weight); color: var(--color-ink-primary); }
+.crop-instruction { margin: 0; color: var(--color-ink-secondary); }
+.crop-message { margin: 0; padding: var(--spacing-2) var(--spacing-3); border-radius: var(--rounded-md); font-weight: 700; }
+.crop-message[data-kind='error'] { color: var(--color-danger); border: var(--hairline) solid var(--color-danger); }
+.crop-message[data-kind='warning'] { color: var(--color-warning); background: var(--color-surface-raised); border: var(--hairline) solid var(--color-warning); }
+.crop-actions { display: flex; gap: var(--spacing-2); flex-wrap: wrap; }
+.crop-action { min-height: var(--hit-area); padding: 0 var(--spacing-3); border: var(--hairline) solid var(--color-accent); border-radius: var(--rounded-md); background: transparent; color: var(--color-accent); font-family: var(--font-label-family); font-size: var(--font-label-size); font-weight: var(--font-label-weight); cursor: pointer; }
+.crop-result { max-width: 100%; height: auto; border-radius: var(--rounded-sm); border: var(--hairline) solid var(--color-border-hairline); }

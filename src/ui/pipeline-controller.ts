@@ -65,6 +65,10 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
       const rev = store.getState().setRotation(faceId, rotation)
       if (rev !== null) await render(faceId, rev)
     },
+    async resetQuad(faceId: FaceId): Promise<void> {
+      const rev = store.getState().resetQuad(faceId)
+      if (rev !== null) await render(faceId, rev)
+    },
     async setProfile(profileId: string): Promise<void> {
       const revs = store.getState().setProfile(profileId)
       await Promise.all(

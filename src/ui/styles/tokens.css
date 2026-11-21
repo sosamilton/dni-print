@@ -65,6 +65,12 @@
   /* components */
   --button-padding: 15px;
   --button-min-height: 52px;
+  --corner-dot-size: 22px;
+  --corner-line-width: 2px;
+  --focus-ring-width: 3px;
+  --magnifier-size: 96px;
+  --color-on-accent: #FFFFFF;
+  --color-handle-edge: rgba(0, 0, 0, 0.5);
   --progress-height: 5px;
   --progress-rounded: 3px;
   --hairline: 1px;

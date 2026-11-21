@@ -38,6 +38,23 @@ export const strings = {
     thumbnailLabel: (face: string) => `Miniatura de ${face}`,
     privacyNotice: 'Las fotos no salen de tu teléfono. Se borran al cerrar la app.',
   },
+  cropStep: {
+    faceCounter: (face: string, index: number, total: number) => `${face} · ${index} de ${total}`,
+    instruction: 'Marcá las cuatro esquinas del documento.',
+    editorLabel: 'Editor de esquinas',
+    resultLabel: 'Recorte enderezado',
+    corners: [
+      'esquina superior izquierda',
+      'esquina superior derecha',
+      'esquina inferior derecha',
+      'esquina inferior izquierda',
+    ],
+    rotate: '↻ Girar',
+    reset: 'Restablecer',
+    invalid: 'Las esquinas se cruzan. Acomodalas en orden.',
+    lowResolution: 'La foto tiene poca resolución. La copia puede verse borrosa.',
+    magnifierLabel: 'Lupa',
+  },
   steps: {
     load: {
       title: 'Cargá las dos caras de tu DNI',
