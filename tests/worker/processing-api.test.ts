@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultQuad } from '../../src/core/index.ts'
+import { defaultQuad, getProfile, layout, uniformMargins } from '../../src/core/index.ts'
 import { createProcessingApi } from '../../src/worker/processing-api.ts'
 import { createFakeImaging, type FakeBitmap } from './fake-imaging.ts'
 
@@ -42,7 +42,7 @@ describe('processing api', () => {
     expect(await api.render('back', q, 45 as never, 'dni-ar', 4)).toMatchObject({ reason: 'invalid-quad' })
   })
 
-  it('closes the previous bitmap on re-ingest and on clear; stubs report not-implemented', async () => {
+  it('closes the previous bitmap on re-ingest and on clear; detect stays a stub', async () => {
     const imaging = createFakeImaging()
     const api = createProcessingApi(imaging)
     await api.ingest('front', blob('800x600'))
@@ -54,7 +54,6 @@ describe('processing api', () => {
     expect(second.closed).toBe(true)
     expect(await api.render('front', defaultQuad(8, 6), 0, 'dni-ar', 1)).toMatchObject({ reason: 'no-source' })
     expect(await api.detect('front')).toEqual({ ok: false, reason: 'not-implemented' })
-    expect(await api.buildPdf()).toEqual({ ok: false, reason: 'not-implemented' })
   })
 
   it('keeps nothing from an ingest that clear() overtakes', async () => {
@@ -72,5 +71,22 @@ describe('processing api', () => {
     const api = createProcessingApi({ ...imaging, raster: { createBitmap: async () => { throw new Error('boom') } } })
     await api.ingest('front', blob('800x600'))
     expect(await api.render('front', defaultQuad(800, 600), 0, 'dni-ar', 5)).toEqual({ ok: false, rev: 5, reason: 'render-failed' })
+  })
+
+  it('builds a PDF from both faces and reports failures', async () => {
+    const api = createProcessingApi(createFakeImaging())
+    const lay = layout(getProfile('dni-ar')!, 2, uniformMargins(10))
+    if (!lay.ok) throw new Error('layout')
+    const q = defaultQuad(800, 600)
+    const crop = { quad: q, rotation: 0 as const }
+    const request = { profileId: 'dni-ar', placements: lay.placements, ruler: lay.ruler, faces: { front: crop, back: crop } }
+    expect(await api.buildPdf(request)).toEqual({ ok: false, reason: 'no-source' })
+    await api.ingest('front', blob('800x600'))
+    await api.ingest('back', blob('800x600'))
+    const r = await api.buildPdf(request)
+    expect(r.ok && new TextDecoder().decode(r.pdf.slice(0, 5))).toBe('%PDF-')
+    expect(await api.buildPdf({ ...request, profileId: 'nope' })).toEqual({ ok: false, reason: 'unknown-profile' })
+    const bad = { ...request, faces: { front: crop, back: { quad: [q[0], q[0], q[0], q[0]] as typeof q, rotation: 0 as const } } }
+    expect(await api.buildPdf(bad)).toEqual({ ok: false, reason: 'invalid-quad' })
   })
 })

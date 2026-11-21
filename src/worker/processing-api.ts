@@ -1,10 +1,12 @@
 // Worker logic, testable without a DOM: all browser imaging goes through ImagingBackend.
 import { getProfile, rectify, renderFace, validateQuad } from '../core/index.ts'
 import type { PixelImage, RasterBackend } from '../core/index.ts'
+import { buildPdfDocument } from '../core/pdf.ts'
 import type { BitmapLike, FaceId, ProcessingApi } from './api.ts'
 
 export const MAX_SOURCE_SIDE_PX = 4096
 export const MAX_PREVIEW_SIDE_PX = 1024
+export const PDF_JPEG_QUALITY = 0.92
 
 export interface ImagingBackend {
   /** Decodes with EXIF orientation applied; null if the blob is not a decodable image. */
@@ -12,6 +14,8 @@ export interface ImagingBackend {
   /** Creates a NEW bitmap whose long side is at most `maxSidePx` (never upscales). */
   scaleTo(bitmap: BitmapLike, maxSidePx: number): Promise<BitmapLike>
   readPixels(bitmap: BitmapLike): PixelImage
+  /** Encodes pixels as a JPEG at their exact size. */
+  encodeJpeg(pixels: PixelImage, quality: number): Promise<Uint8Array>
   raster: RasterBackend
 }
 
@@ -81,9 +85,25 @@ export function createProcessingApi(imaging: ImagingBackend): ProcessingApi {
       }
     },
 
-    // Documented stub: PDF generation arrives in story 2.5.
-    async buildPdf() {
-      return { ok: false, reason: 'not-implemented' }
+    async buildPdf(request) {
+      const profile = getProfile(request.profileId)
+      if (!profile) return { ok: false, reason: 'unknown-profile' }
+      try {
+        const jpegs = {} as Record<FaceId, { jpeg: Uint8Array }>
+        for (const faceId of ['front', 'back'] as const) {
+          const source = sources.get(faceId)
+          if (!source) return { ok: false, reason: 'no-source' }
+          const { quad, rotation } = request.faces[faceId]
+          if (!validateQuad(quad) || !ROTATIONS.includes(rotation)) return { ok: false, reason: 'invalid-quad' }
+          const rectified = rectify(imaging.readPixels(source), quad, rotation, profile)
+          if (!rectified) return { ok: false, reason: 'invalid-quad' }
+          jpegs[faceId] = { jpeg: await imaging.encodeJpeg(rectified, PDF_JPEG_QUALITY) }
+        }
+        const pdf = buildPdfDocument(request.placements, request.ruler, jpegs)
+        return pdf ? { ok: true, pdf } : { ok: false, reason: 'pdf-failed' }
+      } catch {
+        return { ok: false, reason: 'pdf-failed' }
+      }
     },
 
     async clear() {

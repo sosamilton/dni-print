@@ -32,6 +32,12 @@ export function createImagingBackend(): ImagingBackend {
       const { width, height, data } = ctx.getImageData(0, 0, bitmap.width, bitmap.height)
       return { width, height, data } satisfies PixelImage
     },
+    async encodeJpeg(pixels, quality) {
+      const ctx = context2d(pixels.width, pixels.height)
+      ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height), 0, 0)
+      const blob = await ctx.canvas.convertToBlob({ type: 'image/jpeg', quality })
+      return new Uint8Array(await blob.arrayBuffer())
+    },
     raster: {
       async createBitmap(pixels) {
         const ctx = context2d(pixels.width, pixels.height)
