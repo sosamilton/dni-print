@@ -13,7 +13,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:dist": "node scripts/check-dist-urls.ts",
+    "check:licenses": "node scripts/check-licenses.ts",
+    "test:e2e": "npm run build && playwright test"
   },
   "dependencies": {
     "comlink": "4.4.2",

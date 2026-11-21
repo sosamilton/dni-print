@@ -8,6 +8,11 @@ _bmad/render/
 # fotos reales de documentos (AD-14)
 corpus/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
 # Node / Vite (starter)
 # Logs
 logs

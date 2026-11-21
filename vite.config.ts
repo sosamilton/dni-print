@@ -1,7 +1,21 @@
 import react from '@vitejs/plugin-react'
-import { loadEnv } from 'vite'
+import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { gitFromCli, resolveBuildInfo } from './scripts/build-info.ts'
+
+const CSP_META = /[ \t]*<meta\b[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>\r?\n?/i
+
+/**
+ * Removes the CSP meta only in `vite` dev: React Refresh injects an inline
+ * preamble that the policy forbids. `vite build` and `vite preview` keep it.
+ */
+export function stripCspInDev(): Plugin {
+  return {
+    name: 'strip-csp-in-dev',
+    apply: 'serve',
+    transformIndexHtml: (html) => html.replace(CSP_META, ''),
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -11,7 +25,7 @@ export default defineConfig(({ mode }) => {
   console.info(`[build-info] sha=${buildInfo.sha ?? 'none'} repoUrl=${buildInfo.repoUrl ?? 'none'}`)
 
   return {
-    plugins: [react()],
+    plugins: [react(), stripCspInDev()],
     define: {
       __COMMIT_SHA__: JSON.stringify(buildInfo.sha),
       __REPO_URL__: JSON.stringify(buildInfo.repoUrl),

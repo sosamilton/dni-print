@@ -1,0 +1,8 @@
+[
+  {
+    "package": "pako",
+    "version": "2.2.0",
+    "license": "(MIT AND Zlib)",
+    "reason": "Dependencia transitiva obligatoria de jsPDF 4.2.1 (vía fast-png). Zlib es permisiva y compatible con GPL/AGPL; se revisó esta versión exacta."
+  }
+]
