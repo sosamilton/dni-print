@@ -62,6 +62,9 @@ jobs:
       - name: Motor único en dist/
         run: npm run check:engine
 
+      - name: Precache del service worker
+        run: npm run check:precache
+
       - name: Guardia de red (e2e)
         id: e2e
         run: npx playwright test

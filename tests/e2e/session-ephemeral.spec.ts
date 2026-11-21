@@ -28,9 +28,14 @@ test('tras Borrar fotos no queda nada en el almacenamiento y la recarga arranca 
       } catch {
         // OPFS unavailable: nothing stored.
       }
-      const cacheNames = await caches.keys()
+      // Cache Storage may hold only the build's own assets (the SW precache), never photos or PDFs.
       let cacheEntries = 0
-      for (const n of cacheNames) cacheEntries += (await (await caches.open(n)).keys()).length
+      for (const n of await caches.keys()) {
+        for (const req of await (await caches.open(n)).keys()) {
+          if (!new URL(req.url).pathname.startsWith(new URL(document.baseURI).pathname)) cacheEntries++
+          else if (/^blob:|\.pdf$|\.(jpe?g)$/i.test(req.url)) cacheEntries++
+        }
+      }
       return { local: localStorage.length, session: sessionStorage.length, dbs: dbs.length, opfs, cacheEntries }
     })
   expect(await inspect()).toEqual({ local: 0, session: 0, dbs: 0, opfs: 0, cacheEntries: 0 })

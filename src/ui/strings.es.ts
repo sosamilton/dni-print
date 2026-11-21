@@ -15,6 +15,7 @@ export const strings = {
     sourceCodeUnavailable: 'No disponible en esta versión',
     close: 'Cerrar',
     restart: 'Empezar de nuevo',
+    install: 'Instalar la app',
   },
   privacyDialog: {
     title: 'Cómo funciona y privacidad',

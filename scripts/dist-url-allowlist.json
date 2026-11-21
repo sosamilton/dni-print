@@ -1,4 +1,5 @@
 [
+  {"url": "https://bit.ly/wb-precache", "match": "exact", "reason": "Texto de un mensaje de error en workbox-precaching (service worker); nunca se pide."},
   {"url": "http://www.w3.org/2000/svg", "match": "exact", "reason": "Namespace XML de SVG (React DOM y favicon); no genera requests."},
   {"url": "http://www.w3.org/1999/xlink", "match": "exact", "reason": "Namespace XML de XLink (React DOM); no genera requests."},
   {"url": "http://www.w3.org/XML/1998/namespace", "match": "exact", "reason": "Namespace XML (React DOM); no genera requests."},

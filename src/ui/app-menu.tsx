@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState, type FocusEvent } from 'react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type FocusEvent } from 'react'
+import { installPrompt } from './install-prompt.ts'
 import { PrivacyDialog } from './privacy-dialog.tsx'
 import { currentSourceCodeUrl } from './source-link.ts'
 import { strings } from './strings.es.ts'
@@ -13,6 +14,7 @@ export function AppMenu({ onRestart }: { onRestart?: () => void }) {
   const containerRef = useRef(null as HTMLDivElement | null)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const listId = useId()
+  const installable = useSyncExternalStore(installPrompt.subscribe, installPrompt.getSnapshot)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -71,6 +73,20 @@ export function AppMenu({ onRestart }: { onRestart?: () => void }) {
             {strings.menu.privacy}
           </button>
         </li>
+        {installable && (
+          <li>
+            <button
+              type="button"
+              className="app-menu-item"
+              onClick={() => {
+                closeMenuAndRefocus()
+                void installPrompt.install()
+              }}
+            >
+              {strings.menu.install}
+            </button>
+          </li>
+        )}
         {onRestart && (
           <li>
             <button

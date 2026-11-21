@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { gitFromCli, resolveBase, resolveBuildInfo } from './scripts/build-info.ts'
@@ -74,7 +75,38 @@ export default defineConfig(({ mode }) => {
     // Like GitHub Pages, answer missing files with 404 instead of the SPA index.html,
     // so the e2e guard sees assets requested outside the base. Navigation is state-only.
     appType: 'mpa',
-    plugins: [react(), stripCspInDev(), engineCsp(engineId), stubScanicMl()],
+    plugins: [
+      react(),
+      stripCspInDev(),
+      engineCsp(engineId),
+      stubScanicMl(),
+      VitePWA({
+        strategies: 'generateSW',
+        registerType: 'prompt',
+        base,
+        scope: base,
+        manifest: {
+          name: 'DNI Print',
+          short_name: 'DNI Print',
+          description: 'Imprimí tu DNI a tamaño real desde el navegador, sin enviar datos.',
+          lang: 'es',
+          display: 'standalone',
+          start_url: base,
+          scope: base,
+          theme_color: '#2563A8',
+          background_color: '#FBFAF7',
+          icons: [
+            { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
+            { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
+            { src: 'pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          ],
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,wasm,svg,png,ico,woff2}'],
+          ...precacheOptions(engineId),
+        },
+      }),
+    ],
     worker: { format: 'es', plugins: () => [stubScanicMl()] },
     define: {
       __COMMIT_SHA__: JSON.stringify(buildInfo.sha),
