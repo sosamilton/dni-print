@@ -6,6 +6,7 @@ export const strings = {
     back: 'Atrás',
     stepCounter: (step: number, total: number) => `Paso ${step} de ${total}`,
     progressLabel: 'Avance del asistente',
+    stepAnnouncement: (step: number, total: number, title: string) => `Paso ${step} de ${total}: ${title}`,
   },
   update: {
     available: 'Hay una versión nueva.',
@@ -42,7 +43,10 @@ export const strings = {
     replaceHint: 'Tocá para reemplazar',
     dropHint: 'o soltá la foto acá',
     thumbnailLabel: (face: string) => `Miniatura de ${face}`,
-    privacyNotice: 'Las fotos no salen de tu teléfono. Se borran al cerrar la app.',
+    privacyNotice: (desktop: boolean) =>
+      `Las fotos no salen de tu ${desktop ? 'dispositivo' : 'teléfono'}. Se borran al cerrar la app.`,
+    faceStates: { loaded: 'cargado', empty: 'falta', processing: 'procesando', error: 'con error' },
+    faceAreaLabel: (face: string, state: string) => `${face}, ${state}`,
   },
   cropStep: {
     faceCounter: (face: string, index: number, total: number) => `${face} · ${index} de ${total}`,
@@ -87,6 +91,12 @@ export const strings = {
   doneStep: {
     instruction: 'Al imprimir elegí Tamaño real o 100 %. Después medí la regla: tiene que dar 10 cm.',
     cleared: 'Listo, borramos todo.',
+    iosGuideTitle: 'Para imprimir desde iPhone o iPad',
+    iosGuideSteps: [
+      'Abrí el PDF descargado desde la app Archivos.',
+      'Tocá el botón Compartir.',
+      'Elegí Imprimir, o guardalo en otra app.',
+    ],
   },
   steps: {
     load: {

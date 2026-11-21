@@ -11,3 +11,11 @@
 .print-more summary { min-height: var(--hit-area); display: flex; align-items: center; cursor: pointer; }
 .print-margin { display: flex; flex-direction: column; gap: var(--spacing-2); }
 .print-margin input { min-height: var(--hit-area); }
+
+.print-columns { display: flex; flex-direction: column; gap: var(--spacing-3); }
+.print-options { display: flex; flex-direction: column; gap: var(--spacing-3); order: -1; min-width: 0; }
+.print-preview { display: flex; flex-direction: column; min-width: 0; }
+.print-copies { flex-wrap: wrap; }
+.ios-guide { padding: var(--spacing-3); border: var(--hairline) solid var(--color-border-hairline); border-radius: var(--rounded-md); }
+.ios-guide-title { margin: 0 0 var(--spacing-2); font-family: var(--font-label-family); font-size: var(--font-label-size); font-weight: var(--font-label-weight); }
+.ios-guide ol { margin: 0; padding-left: var(--spacing-4); }

@@ -20,7 +20,9 @@ export function PrintStep({ error = false }: { error?: boolean }) {
   const maxMargin = maxMarginMm(profileId, copies)
   const copy = strings.printStep
   return (
-    <div className="print-step">
+    <div className="print-step" data-layout="columns">
+      <div className="print-columns">
+      <div className="print-options">
       <div className="print-copies" role="group" aria-label={copy.copiesLabel}>
         {OPTIONS.map((n) => (
           <button
@@ -84,6 +86,14 @@ export function PrintStep({ error = false }: { error?: boolean }) {
           />
         </label>
       </details>
+      <p className="print-notice">{copy.notice}</p>
+      {error && (
+        <p className="print-error" role="alert">
+          {copy.failed}
+        </p>
+      )}
+      </div>
+      <div className="print-preview">
       {!sheet.ok && (
         <p className="print-error" role="alert">
           {copy.noFit(copies)}
@@ -97,12 +107,8 @@ export function PrintStep({ error = false }: { error?: boolean }) {
           rendered={{ front: faces.front?.rendered ?? null, back: faces.back?.rendered ?? null }}
         />
       )}
-      <p className="print-notice">{copy.notice}</p>
-      {error && (
-        <p className="print-error" role="alert">
-          {copy.failed}
-        </p>
-      )}
+      </div>
+      </div>
     </div>
   )
 }

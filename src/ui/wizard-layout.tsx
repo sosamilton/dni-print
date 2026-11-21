@@ -1,4 +1,4 @@
-import { useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { updatePrompt } from './update-prompt.ts'
 import { AppMenu } from './app-menu.tsx'
 import { strings } from './strings.es.ts'
@@ -30,6 +30,18 @@ export function WizardLayout({
   onRestart,
   children,
 }: WizardLayoutProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const firstRender = useRef(true)
+  const [announcement, setAnnouncement] = useState('')
+  // On a step change (not on first load) focus goes to the title and the step is announced.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    titleRef.current?.focus()
+    setAnnouncement(strings.wizard.stepAnnouncement(stepNumber, STEP_COUNT, title))
+  }, [title, stepNumber])
   const updateAvailable = useSyncExternalStore(updatePrompt.subscribe, updatePrompt.getSnapshot)
   return (
     <div className="wizard">
@@ -68,7 +80,12 @@ export function WizardLayout({
           ))}
         </div>
         <p className="wizard-counter" aria-hidden="true">{strings.wizard.stepCounter(stepNumber, STEP_COUNT)}</p>
-        <h1 className="wizard-title">{title}</h1>
+        <h1 className="wizard-title" ref={titleRef} tabIndex={-1}>
+          {title}
+        </h1>
+        <p className="visually-hidden" role="status">
+          {announcement}
+        </p>
       </header>
       <main className="wizard-body">{children}</main>
       <footer className="wizard-footer">

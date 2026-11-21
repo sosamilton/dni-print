@@ -89,3 +89,22 @@
     --color-placeholder: #242D34;
   }
 }
+
+/* Wide windows (>= 900px, UX-DR12): print step in two columns. Media queries cannot read var(), so the literals live here. */
+@media (min-width: 900px) {
+  .print-step[data-layout='columns'] .print-columns { display: grid; grid-template-columns: 3fr 2fr; gap: var(--spacing-5); align-items: start; }
+  .print-step[data-layout='columns'] .print-options { order: 0; }
+  .print-step[data-layout='columns'] .print-preview { order: -1; }
+  .print-step[data-layout='columns'] .sheet-preview { max-width: 100%; }
+}
+
+@media (min-width: 900px) {
+  .wizard:has(.print-step[data-layout='columns']) {
+    max-width: 1100px;
+  }
+
+  .wizard:has(.print-step[data-layout='columns']) .wizard-footer .button-primary {
+    max-width: var(--column-max);
+    margin-left: auto;
+  }
+}

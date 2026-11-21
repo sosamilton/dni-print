@@ -10,7 +10,7 @@ test('estado inicial', async ({ page }) => {
   await page.goto('./')
   await expect(page.getByLabel(loadStep.documentLabel)).toHaveValue('dni-ar')
   await expect(page.getByText(loadStep.missing)).toHaveCount(2)
-  await expect(page.getByText(loadStep.privacyNotice)).toBeVisible()
+  await expect(page.getByText(loadStep.privacyNotice(true))).toBeVisible()
   await expect(cont(page)).toBeDisabled()
 })
 

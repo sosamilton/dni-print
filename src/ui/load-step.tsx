@@ -5,11 +5,13 @@ import type { BitmapLike } from '../core/index.ts'
 import type { FaceId } from '../worker/api.ts'
 import { faceStatus } from './load-step-model.ts'
 import { pipeline } from './pipeline.ts'
+import { currentNavigator, isDesktop } from './platform.ts'
 import { useSession } from './session-store.ts'
 import { strings } from './strings.es.ts'
 import './load-step.css'
 
 const FACE_IDS: FaceId[] = ['front', 'back']
+
 
 /** True when the browser lists at least one camera. */
 function useHasCamera(): boolean {
@@ -104,7 +106,12 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
       onDrop={onDrop}
     >
       <h2 className="face-title">{label}</h2>
-      <button type="button" className="face-area" onClick={() => galleryRef.current?.click()}>
+      <button
+        type="button"
+        className="face-area"
+        aria-label={strings.loadStep.faceAreaLabel(label, strings.loadStep.faceStates[status])}
+        onClick={() => galleryRef.current?.click()}
+      >
         {face ? (
           <Thumbnail
             bitmap={face.quadOrigin !== 'default' && face.rendered ? face.rendered : face.previewBitmap}
@@ -182,7 +189,7 @@ export function LoadStep() {
       {FACE_IDS.map((id) => (
         <FaceSlot key={id} faceId={id} hasCamera={hasCamera} />
       ))}
-      <p className="load-privacy">{strings.loadStep.privacyNotice}</p>
+      <p className="load-privacy">{strings.loadStep.privacyNotice(isDesktop(currentNavigator()))}</p>
     </div>
   )
 }
