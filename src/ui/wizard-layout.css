@@ -101,3 +101,9 @@
   line-height: var(--font-button-line-height);
   cursor: pointer;
 }
+
+.button-primary:disabled {
+  background: var(--color-placeholder);
+  color: var(--color-ink-secondary);
+  cursor: not-allowed;
+}

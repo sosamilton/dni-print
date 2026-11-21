@@ -12,6 +12,7 @@ export interface WizardLayoutProps {
   onBack?: () => void
   primaryLabel: string
   onPrimary: () => void
+  primaryDisabled?: boolean
   children: ReactNode
 }
 
@@ -23,6 +24,7 @@ export function WizardLayout({
   onBack,
   primaryLabel,
   onPrimary,
+  primaryDisabled = false,
   children,
 }: WizardLayoutProps) {
   return (
@@ -58,7 +60,7 @@ export function WizardLayout({
       </header>
       <main className="wizard-body">{children}</main>
       <footer className="wizard-footer">
-        <button type="button" className="button-primary" onClick={onPrimary}>
+        <button type="button" className="button-primary" onClick={onPrimary} disabled={primaryDisabled}>
           {primaryLabel}
         </button>
       </footer>

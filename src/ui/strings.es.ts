@@ -23,6 +23,21 @@ export const strings = {
       'DNI Print es software libre, con licencia AGPL-3.0. El código fuente está en el menú ⋮, en «Código fuente».',
     ],
   },
+  loadStep: {
+    documentLabel: 'Documento',
+    faces: { front: 'Frente', back: 'Dorso' },
+    missing: 'Falta esta cara',
+    processing: 'Procesando…',
+    loaded: (face: string) => `${face} ✓`,
+    notImage: 'Ese archivo no es una imagen. Probá con una foto JPG o PNG.',
+    genericError: 'No pudimos leer esa foto. Probá con otra.',
+    takePhoto: 'Sacar foto',
+    pickFromGallery: 'Elegir de la galería',
+    replaceHint: 'Tocá para reemplazar',
+    dropHint: 'o soltá la foto acá',
+    thumbnailLabel: (face: string) => `Miniatura de ${face}`,
+    privacyNotice: 'Las fotos no salen de tu teléfono. Se borran al cerrar la app.',
+  },
   steps: {
     load: {
       title: 'Cargá las dos caras de tu DNI',

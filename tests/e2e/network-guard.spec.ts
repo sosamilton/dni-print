@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
 import { AD7_CSP } from '../csp-policy.ts'
+import { pngFile } from './fixtures.ts'
 import { installNetworkGuard, type NetworkGuard } from './network-guard.ts'
 
 const test = base.extend<{ guard: NetworkGuard }>({
@@ -14,6 +15,12 @@ async function expectTitle(page: Page, title: string) {
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
 }
 
+async function loadBothFaces(page: Page) {
+  await page.getByTestId('front-gallery').setInputFiles(pngFile())
+  await page.getByTestId('back-gallery').setInputFiles(pngFile())
+  await expect(page.getByRole('button', { name: strings.steps.load.primary, exact: true })).toBeEnabled()
+}
+
 async function clickPrimary(page: Page, label: string) {
   await page.getByRole('button', { name: label, exact: true }).click()
 }
@@ -25,6 +32,7 @@ async function walkThroughApp(page: Page) {
   await page.goto('./')
   await expectTitle(page, steps.load.title)
 
+  await loadBothFaces(page)
   await clickPrimary(page, steps.load.primary)
   await expectTitle(page, steps.crop.title)
   await page.getByRole('button', { name: wizard.back, exact: true }).click()
