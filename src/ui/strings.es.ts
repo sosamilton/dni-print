@@ -48,6 +48,14 @@ export const strings = {
     faceStates: { loaded: 'cargado', empty: 'falta', processing: 'procesando', error: 'con error' },
     faceAreaLabel: (face: string, state: string) => `${face}, ${state}`,
   },
+  camera: {
+    title: 'Sacar foto con la cámara',
+    previewLabel: 'Vista previa de la cámara',
+    shoot: 'Sacar',
+    cancel: 'Cancelar',
+    denied: 'No tenemos permiso para usar la cámara. Habilitala en el navegador o elegí una foto de la galería.',
+    unavailable: 'No pudimos abrir la cámara. Elegí una foto de la galería.',
+  },
   cropStep: {
     faceCounter: (face: string, index: number, total: number) => `${face} · ${index} de ${total}`,
     instruction: 'Marcá las cuatro esquinas del documento.',

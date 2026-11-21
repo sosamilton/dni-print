@@ -5,6 +5,7 @@ import type { BitmapLike } from '../core/index.ts'
 import type { FaceId } from '../worker/api.ts'
 import { faceStatus } from './load-step-model.ts'
 import { pipeline } from './pipeline.ts'
+import { CameraDialog } from './camera-dialog.tsx'
 import { currentNavigator, isDesktop } from './platform.ts'
 import { useSession } from './session-store.ts'
 import { strings } from './strings.es.ts'
@@ -58,6 +59,9 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  // Desktop browsers ignore `capture`, so they get a live webcam dialog instead.
+  const liveCamera = isDesktop(currentNavigator())
   const galleryRef = useRef(null as HTMLInputElement | null)
   const cameraRef = useRef(null as HTMLInputElement | null)
   const label = strings.loadStep.faces[faceId]
@@ -105,7 +109,7 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
     >
-      <h2 className="face-title">{label}</h2>
+      <h2 className="face-title visually-hidden">{label}</h2>
       <button
         type="button"
         className="face-area"
@@ -117,21 +121,26 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
             bitmap={face.quadOrigin !== 'default' && face.rendered ? face.rendered : face.previewBitmap}
             label={strings.loadStep.thumbnailLabel(label)}
           />
-        ) : null}
-        <span className="face-status" role="status">
-          {status === 'processing' && strings.loadStep.processing}
-          {status === 'loaded' && strings.loadStep.loaded(label)}
-          {status === 'empty' && strings.loadStep.missing}
-          {status === 'error' && error}
+        ) : (
+          <span className="face-placeholder" aria-hidden="true" />
+        )}
+        <span className="face-text">
+          {!face && <span className="face-name" aria-hidden="true">{label}</span>}
+          <span className="face-status" role="status">
+            {status === 'processing' && strings.loadStep.processing}
+            {status === 'loaded' && strings.loadStep.loaded(label)}
+            {status === 'empty' && strings.loadStep.missing}
+            {status === 'error' && error}
+          </span>
+          <span className="face-hint">{face ? strings.loadStep.replaceHint : strings.loadStep.dropHint}</span>
         </span>
-        <span className="face-hint">{face ? strings.loadStep.replaceHint : strings.loadStep.dropHint}</span>
       </button>
       <div className="face-actions">
         <button type="button" className="face-action" onClick={() => galleryRef.current?.click()}>
           {strings.loadStep.pickFromGallery}
         </button>
         {hasCamera && (
-          <button type="button" className="face-action" onClick={() => cameraRef.current?.click()}>
+          <button type="button" className="face-action" onClick={() => (liveCamera ? setCameraOpen(true) : cameraRef.current?.click())}>
             {strings.loadStep.takePhoto}
           </button>
         )}
@@ -148,7 +157,15 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
           void load(file)
         }}
       />
-      {hasCamera && (
+      {cameraOpen && (
+        <CameraDialog
+          onClose={(file) => {
+            setCameraOpen(false)
+            void load(file ?? undefined)
+          }}
+        />
+      )}
+      {hasCamera && !liveCamera && (
         <input
           ref={cameraRef}
           type="file"

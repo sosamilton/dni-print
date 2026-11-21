@@ -62,6 +62,9 @@ test('sin cámara no aparece "Sacar foto"', async ({ page }) => {
   await expect(page.getByRole('button', { name: loadStep.takePhoto })).toHaveCount(0)
 })
 
+test.describe('teléfono', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36' })
+
 test('con cámara aparece "Sacar foto" con captura trasera', async ({ page }) => {
   await page.addInitScript(
     `navigator.mediaDevices.enumerateDevices = () => Promise.resolve([{ kind: 'videoinput' }])`,
@@ -69,6 +72,7 @@ test('con cámara aparece "Sacar foto" con captura trasera', async ({ page }) =>
   await page.goto('./')
   await expect(page.getByRole('button', { name: loadStep.takePhoto })).toHaveCount(2)
   await expect(page.getByTestId('front-camera')).toHaveAttribute('capture', 'environment')
+})
 })
 
 test('arrastrar y soltar una imagen en la cara', async ({ page }) => {
