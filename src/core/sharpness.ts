@@ -6,10 +6,11 @@ import type { PixelImage } from './geometry/types.ts'
 export const SHARPNESS_WIDTH_PX = 512
 
 /**
- * Below this a face is reported as blurry. Conservative: well under the sharpness of every
- * real photo in the local corpus (see spec 6.4, Design Notes, for the calibration).
+ * Below this a face is reported as blurry. Calibrated on 24 real photos of one document (faces
+ * rectified with hand-marked corners): the 4 blurry ones measure 53–331 and the 20 sharp ones
+ * 519–3797, so 400 sits in the gap. Backs measure lower than fronts, hence the margin on the sharp side.
  */
-export const BLUR_THRESHOLD = 40
+export const BLUR_THRESHOLD = 400
 
 /** Rec. 601 luma of one RGB pixel (same formula as render-face). */
 function luma(r: number, g: number, b: number): number {
