@@ -5,6 +5,8 @@
 
 Aplicación web para imprimir un DNI o una licencia de conducir argentinos **a tamaño real** en una hoja A4, a partir de fotos tomadas con el celular o la webcam. Funciona completamente en el navegador: no hay servidor, no hay cuentas y las fotos nunca salen del dispositivo.
 
+**[Abrir la aplicación](https://sosamilton.github.io/dni-print/)**
+
 ## El problema
 
 Fotocopiar un documento es incómodo, y imprimir una foto casual sale torcida, con fondo, en proporciones erróneas y a un tamaño que no es el del plástico. Muchos trámites piden una copia legible y del tamaño real, con frente y dorso en la misma hoja.

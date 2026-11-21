@@ -1,7 +1,7 @@
 {
   "name": "dni-print",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Imprimí tu DNI a tamaño real desde el navegador, sin enviar datos.",
   "license": "AGPL-3.0-only",
   "type": "module",
