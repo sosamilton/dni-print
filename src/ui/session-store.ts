@@ -33,6 +33,8 @@ export interface SessionState {
   watermarkText: string
   /** Uniform sheet margin in mm (5–20). */
   marginMm: number
+  /** Last built PDF, kept in memory only (for sharing) until clearSession. */
+  pdf: { bytes: Uint8Array; copies: 1 | 2 } | null
 }
 
 export interface SessionActions {
@@ -62,6 +64,8 @@ export interface SessionActions {
   /** Creates a tracked blob URL for the PDF; release it with `releaseUrl`. */
   createPdfUrl(pdf: Uint8Array): string
   releaseUrl(url: string): void
+  /** Keeps the built PDF's bytes in memory (never in storage) until clearSession. */
+  setPdf(bytes: Uint8Array, copies: 1 | 2): void
   clearSession(): void
 }
 
@@ -108,6 +112,7 @@ export function createSessionStore(deps: SessionDeps) {
       watermarkOn: false,
       watermarkText: '',
       marginMm: DEFAULT_MARGIN_MM,
+      pdf: null,
 
       bindWorker(fn) {
         clearWorker = fn
@@ -227,6 +232,10 @@ export function createSessionStore(deps: SessionDeps) {
         set((s) => ({ blobUrls: s.blobUrls.filter((u) => u !== url) }))
       },
 
+      setPdf(bytes, copies) {
+        set({ pdf: { bytes, copies } })
+      },
+
       clearSession() {
         const { faces, blobUrls } = get()
         for (const url of blobUrls) deps.revokeUrl(url)
@@ -234,7 +243,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM, pdf: null })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

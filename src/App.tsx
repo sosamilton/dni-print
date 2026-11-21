@@ -4,6 +4,7 @@ import { pipeline } from './ui/pipeline.ts'
 import { sheetLayout } from './ui/print-step-model.ts'
 import { canContinue } from './ui/load-step-model.ts'
 import { sessionStore, useSession } from './ui/session-store.ts'
+import { pdfFileName } from './ui/share-pdf.ts'
 import { strings } from './ui/strings.es.ts'
 import { useWizardNavigation } from './ui/use-wizard-navigation.ts'
 import { WizardLayout } from './ui/wizard-layout.tsx'
@@ -50,10 +51,11 @@ export function App() {
       return
     }
     const store = sessionStore.getState()
+    store.setPdf(result.pdf, copies)
     const url = store.createPdfUrl(result.pdf)
     const link = document.createElement('a')
     link.href = url
-    link.download = `dni-print-${copies}-copias.pdf`
+    link.download = pdfFileName(copies)
     document.body.appendChild(link)
     link.click()
     link.remove()

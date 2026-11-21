@@ -107,6 +107,19 @@ describe('session store copies and pdf urls', () => {
   })
 })
 
+describe('session store pdf bytes', () => {
+  it('starts null, keeps bytes and copies from setPdf, and clears them on clearSession', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    expect(s.getState().pdf).toBeNull()
+    const bytes = new Uint8Array([1, 2, 3])
+    s.getState().setPdf(bytes, 1)
+    expect(s.getState().pdf).toEqual({ bytes, copies: 1 })
+    expect(s.getState().pdf!.bytes).toBe(bytes)
+    s.getState().clearSession()
+    expect(s.getState().pdf).toBeNull()
+  })
+})
+
 describe('session store filter', () => {
   it('defaults to color, bumps no revs when unchanged, and resets on clear', () => {
     const s = createSessionStore({ revokeUrl: () => {} })

@@ -104,6 +104,8 @@ export const strings = {
   doneStep: {
     instruction: 'Al imprimir elegí Tamaño real o 100 %. Después medí la regla: tiene que dar 10 cm.',
     cleared: 'Listo, borramos todo.',
+    share: 'Compartir PDF',
+    shareFailed: 'No pudimos compartir el PDF. Probá de nuevo o usá el PDF descargado.',
     iosGuideTitle: 'Para imprimir desde iPhone o iPad',
     iosGuideSteps: [
       'Abrí el PDF descargado desde la app Archivos.',
