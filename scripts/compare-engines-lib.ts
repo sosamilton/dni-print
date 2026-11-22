@@ -2,8 +2,11 @@
 export type Pt = [number, number]
 export type QuadJson = [Pt, Pt, Pt, Pt]
 
-export const DEFAULT_ENGINE = 'scanic'
-export const ENGINE_IDS = ['scanic', 'opencv'] as const
+export const DEFAULT_ENGINE = 'cardfit'
+export const ENGINE_IDS = ['cardfit', 'scanic', 'opencv'] as const
+
+/** A detection with a mean corner error below this is a «acierto»; at or above it is a gross error (counts as a miss). */
+export const HIT_ERROR_PX = 100
 export type EngineName = (typeof ENGINE_IDS)[number]
 
 export type EngineOutcome =
@@ -53,9 +56,22 @@ export interface EngineSummary {
   /** Same, after the full-resolution corner refinement. */
   meanRefinedErrorPx: number | null
   withGroundTruth: number
+  /** Median of the refined (production) error over detections with ground truth. */
+  medianRefinedErrorPx: number | null
+  /** Detections whose refined error is below `HIT_ERROR_PX`. */
+  hits: number
+  /** Detections whose refined error is `HIT_ERROR_PX` or more. */
+  gross: number
 }
 
 const mean = (xs: number[]): number | null => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null)
+
+export function median(xs: readonly number[]): number | null {
+  if (!xs.length) return null
+  const sorted = [...xs].sort((a, b) => a - b)
+  const mid = sorted.length >> 1
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
 
 export function summarize(results: readonly ImageResult[]): EngineSummary[] {
   return ENGINE_IDS.map((engine) => {
@@ -71,6 +87,9 @@ export function summarize(results: readonly ImageResult[]): EngineSummary[] {
       meanErrorPx: mean(errors),
       meanRefinedErrorPx: mean(refinedErrors),
       withGroundTruth: errors.length,
+      medianRefinedErrorPx: median(refinedErrors),
+      hits: refinedErrors.filter((e) => e < HIT_ERROR_PX).length,
+      gross: refinedErrors.filter((e) => e >= HIT_ERROR_PX).length,
     }
   })
 }
@@ -82,8 +101,20 @@ function cell(o: EngineOutcome): string[] {
   return [o.detected ? 'sí' : 'no', fmt(o.ms), o.detected ? fmt(o.error) : '—', o.detected ? fmt(o.refinedError) : '—']
 }
 
+const DECISION_PLACEHOLDER = '## Decisión\n\nMotor elegido: _por completar_\n\nMotivo: _por completar_'
+
+/** The «Decisión» section (heading included, up to the next `## ` or the end) of an earlier report; null when absent or still a placeholder. */
+export function extractDecision(report: string): string | null {
+  const start = report.search(/^## Decisión\s*$/m)
+  if (start < 0) return null
+  const rest = report.slice(start)
+  const next = rest.slice(1).search(/^## /m)
+  const section = (next < 0 ? rest : rest.slice(0, next + 1)).trim()
+  return /^Motor elegido: _por completar_\s*$/m.test(section) ? null : section
+}
+
 /** Plain-text Markdown report. Images are only identified by `imagen 1…n`: no names, paths or pixels. */
-export function renderReport(results: readonly ImageResult[], source: ReportSource, date: string): string {
+export function renderReport(results: readonly ImageResult[], source: ReportSource, date: string, decision?: string): string {
   const sourceLabel = source === 'corpus' ? 'corpus (fotos reales, no incluidas en el repo)' : 'fixtures (imágenes sintéticas)'
   const lines = [
     '# Comparación de motores de detección',
@@ -98,10 +129,13 @@ export function renderReport(results: readonly ImageResult[], source: ReportSour
     '',
     '## Resumen',
     '',
-    '| Motor | Detecciones | Errores de motor | Tiempo medio (ms) | Error medio (px) | Error refinado (px) | Imágenes con verdad terreno |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
+    `Pipeline de producción = detección + refinado a resolución completa. Un «acierto» es una detección con error refinado menor a ${HIT_ERROR_PX} px; una detección con ${HIT_ERROR_PX} px o más es un error grosero y cuenta como fallo, igual que no detectar.`,
+    '',
+    '| Motor | Aciertos | Errores groseros | Mediana del error refinado (px) | Detecciones | Errores de motor | Tiempo medio (ms) | Error medio (px) | Error refinado medio (px) | Imágenes con verdad terreno |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...summarize(results).map(
-      (s) => `| ${s.engine} | ${s.detected}/${s.images} | ${s.engineErrors} | ${fmt(s.meanMs)} | ${fmt(s.meanErrorPx)} | ${fmt(s.meanRefinedErrorPx)} | ${s.withGroundTruth} |`,
+      (s) =>
+        `| ${s.engine} | ${s.hits}/${s.images} | ${s.gross} | ${fmt(s.medianRefinedErrorPx)} | ${s.detected}/${s.images} | ${s.engineErrors} | ${fmt(s.meanMs)} | ${fmt(s.meanErrorPx)} | ${fmt(s.meanRefinedErrorPx)} | ${s.withGroundTruth} |`,
     ),
     '',
     '## Detalle por imagen',
@@ -110,11 +144,7 @@ export function renderReport(results: readonly ImageResult[], source: ReportSour
     `| --- | ${ENGINE_IDS.map(() => '--- | --- | --- | ---').join(' | ')} |`,
     ...results.map((r, i) => `| imagen ${i + 1} | ${ENGINE_IDS.flatMap((e) => cell(r[e])).join(' | ')} |`),
     '',
-    '## Decisión',
-    '',
-    'Motor elegido: _por completar_',
-    '',
-    'Motivo: _por completar_',
+    decision?.trim() ? decision.trim() : DECISION_PLACEHOLDER,
     '',
   ]
   return lines.join('\n')

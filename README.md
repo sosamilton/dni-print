@@ -29,7 +29,7 @@ foto → detección de esquinas → rectificación (homografía) → escala fís
 
 - La **rectificación** corrige la perspectiva con una homografía propia, y renderiza la cara a 300 DPI en milímetros reales.
 - El **PDF** se genera con `jsPDF` y pide imprimir sin escalado. Incluye una **regla de 100 mm** de calibración para comprobar en papel que la escala es exacta.
-- La detección de esquinas usa [`scanic`](https://github.com/marquaye/scanic) por defecto, con [OpenCV.js](https://github.com/TechStark/opencv-js) como motor alternativo en tiempo de compilación.
+- La detección de esquinas usa `cardfit` por defecto (rectas de borde más la forma de la tarjeta, código propio y sin dependencias), con [`scanic`](https://github.com/marquaye/scanic) y [OpenCV.js](https://github.com/TechStark/opencv-js) como motores alternativos en tiempo de compilación.
 
 ## Principios
 
@@ -46,7 +46,7 @@ Pipes and filters, con un núcleo puro y capas que se verifican con un test:
 ```text
 src/
   core/      geometría, perfiles de documento, layout y PDF (sin React, DOM ni estado global)
-  engines/   puerto DetectionEngine y adaptadores (scanic, opencv)
+  engines/   puerto DetectionEngine y adaptadores (cardfit, scanic, opencv)
   worker/    worker de procesamiento (Comlink): ingesta, detección, render y PDF
   ui/        componentes React, estado de sesión (zustand) y textos
 ```

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-export type EngineId = 'scanic' | 'opencv'
+export type EngineId = 'cardfit' | 'scanic' | 'opencv'
 
 /** Problems that show the build does not carry exactly the chosen engine (empty = OK). */
 export function engineProblems(engine: EngineId, files: Record<string, string>): string[] {
@@ -11,11 +11,14 @@ export function engineProblems(engine: EngineId, files: Record<string, string>):
   if (engine === 'opencv') {
     return [...(hasOpenCv ? [] : ['falta el chunk de OpenCV.js']), ...(hasScanic ? ['el bundle opencv incluye scanic'] : [])]
   }
+  if (engine === 'cardfit') {
+    return [...(hasOpenCv ? ['el bundle cardfit incluye OpenCV.js'] : []), ...(hasScanic ? ['el bundle cardfit incluye scanic'] : [])]
+  }
   return hasOpenCv ? ['el bundle scanic incluye OpenCV.js'] : []
 }
 
 function main(): number {
-  const engine = (process.env.VITE_DETECTION_ENGINE?.trim() || 'scanic') as EngineId
+  const engine = (process.env.VITE_DETECTION_ENGINE?.trim() || 'cardfit') as EngineId
   const assets = resolve(process.env.DIST_DIR || 'dist', 'assets')
   if (!existsSync(assets)) {
     console.error('No hay dist/assets: corré `npm run build` primero.')

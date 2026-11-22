@@ -48,7 +48,8 @@ describe('engine-csp plugin', () => {
   const run = (id: string) => (engineCsp(id).transformIndexHtml as (html: string) => string)(indexHtml)
   const cspOf = (html: string) => /http-equiv="?Content-Security-Policy"?[^>]*content="([^"]*)"/i.exec(html)?.[1]
 
-  it('leaves AD-7 identical for scanic', () => {
+  it('leaves AD-7 identical for cardfit and scanic', () => {
+    expect(run('cardfit')).toBe(indexHtml)
     expect(run('scanic')).toBe(indexHtml)
   })
 
@@ -58,8 +59,9 @@ describe('engine-csp plugin', () => {
 })
 
 describe('precacheOptions', () => {
-  it('sets 16 MiB for opencv and less for scanic', () => {
+  it('sets 16 MiB for opencv and less for cardfit and scanic', () => {
     expect(precacheOptions('opencv').maximumFileSizeToCacheInBytes).toBe(16 * 1024 * 1024)
+    expect(precacheOptions('cardfit').maximumFileSizeToCacheInBytes).toBeLessThan(16 * 1024 * 1024)
     expect(precacheOptions('scanic').maximumFileSizeToCacheInBytes).toBeLessThan(16 * 1024 * 1024)
   })
 })

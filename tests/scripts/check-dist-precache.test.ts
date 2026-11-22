@@ -2,12 +2,21 @@ import { describe, expect, it } from 'vitest'
 import { manifestProblems, precacheProblems, runtimeCachingProblems } from '../../scripts/check-dist-precache.ts'
 
 describe('precacheProblems', () => {
-  it('OK when the engine chunk is listed', () => {
-    expect(precacheProblems('precacheAndRoute([{url:"assets/scanic-abc.js",revision:null}])')).toEqual([])
-    expect(precacheProblems('[{url:"assets/opencv-abc.js",revision:null}]')).toEqual([])
+  const sw = (...files: string[]) => `precacheAndRoute([${files.map((f) => `{url:"assets/${f}",revision:null}`).join(',')}])`
+  it('OK when the chosen engine chunk is listed', () => {
+    expect(precacheProblems(sw('scanic-abc.js'), 'scanic')).toEqual([])
+    expect(precacheProblems(sw('opencv-abc.js'), 'opencv')).toEqual([])
+    // cardfit lives inside the worker bundle: that is the chunk that must be precached.
+    expect(precacheProblems(sw('processing.worker-abc.js'))).toEqual([])
+    expect(precacheProblems(sw('processing.worker-abc.js'), 'cardfit')).toEqual([])
+  })
+  it('does not accept the worker as proof of a scanic or opencv chunk', () => {
+    expect(precacheProblems(sw('processing.worker-abc.js'), 'scanic')).toHaveLength(1)
+    expect(precacheProblems(sw('processing.worker-abc.js'), 'opencv')).toHaveLength(1)
   })
   it('fails without the engine chunk or without a list', () => {
-    expect(precacheProblems('[{url:"assets/index-a.js",revision:null}]')).toHaveLength(1)
+    expect(precacheProblems(sw('index-a.js'), 'scanic')).toHaveLength(1)
+    expect(precacheProblems(sw('index-a.js'))).toHaveLength(1)
     expect(precacheProblems('nothing')).toHaveLength(1)
   })
 })

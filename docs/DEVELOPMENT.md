@@ -17,7 +17,7 @@ Detalle técnico para quien quiera correr, modificar o auditar DNI Print. El res
 | `npm run preview` | Sirve localmente el build de `dist/`. |
 | `npm run test:e2e` | Hace el build y corre la guardia de red de Playwright (ver "Privacidad verificable"). |
 | `npm run check:dist` | Revisa que `dist/` no tenga URLs fuera de la allowlist. |
-| `npm run compare-engines` | Corre `scanic` y `opencv` en Chromium sobre `corpus/` (o `tests/fixtures/` si está vacío) y escribe `docs/engine-comparison.md`. |
+| `npm run compare-engines` | Corre `cardfit`, `scanic` y `opencv` en Chromium sobre `corpus/` (o `tests/fixtures/` si está vacío) y escribe `docs/engine-comparison.md`. |
 | `npm run check:licenses` | Revisa las licencias de las dependencias de producción. |
 
 ## Estructura
@@ -84,7 +84,7 @@ El build y `npm run preview` la sirven intacta. Solo `npm run dev` la quita (plu
 
 ### Motor de detección (`VITE_DETECTION_ENGINE`)
 
-`scanic` (por defecto) o `opencv` (@techstark/opencv-js, single-thread, wasm embebido). Se resuelve en compilación: el bundle lleva un solo motor.
+`cardfit` (por defecto, código propio en `src/core/geometry/card-fit.ts`, sin dependencias), `scanic` u `opencv` (@techstark/opencv-js, single-thread, wasm embebido). Se resuelve en compilación: el bundle lleva un solo motor.
 
 ```bash
 VITE_DETECTION_ENGINE=opencv npm run build && npm run check:dist
@@ -119,7 +119,7 @@ Busca toda URL `http(s)://` en los archivos de `dist/` (o del directorio de `DIS
 
 ### Comparación de motores (`npm run compare-engines`)
 
-Mide, por imagen y motor, si detectó, el tiempo y el error medio de esquinas contra `<nombre>.quad.json` (`[[x,y]×4]` TL, TR, BR, BL en px de la fuente) si existe junto a la imagen. Usa `corpus/` o, si no tiene imágenes, `tests/fixtures/`. El reporte `docs/engine-comparison.md` identifica las imágenes solo como `imagen 1…n` y deja la sección «Decisión» para una persona. El valor por defecto de `VITE_DETECTION_ENGINE` es `scanic` hasta que esa decisión diga otra cosa.
+Mide, por imagen y motor, si detectó, el tiempo y el error medio de esquinas contra `<nombre>.quad.json` (`[[x,y]×4]` TL, TR, BR, BL en px de la fuente) si existe junto a la imagen. Usa `corpus/` o, si no tiene imágenes, `tests/fixtures/`. El reporte `docs/engine-comparison.md` identifica las imágenes solo como `imagen 1…n` y resume, con el pipeline de producción (detección + refinado), los aciertos (error < 100 px), los errores groseros (≥ 100 px, cuentan como fallo), y la mediana del error. La sección «Decisión» la escribe una persona y una corrida nueva la conserva. `tests/scripts/corpus-regression.test.ts` repite la medición y falla si empeoran los aciertos o la mediana (se saltea sin `corpus/`). El valor por defecto de `VITE_DETECTION_ENGINE` es `cardfit` (ver la «Decisión» de `docs/engine-comparison.md`). La regresión del corpus no corre en CI (el corpus no está en el repo): ahí solo protegen las pruebas con escenas sintéticas; corré `npm test` localmente con `corpus/` antes de tocar el detector.
 
 ### Licencias (`npm run check:licenses`)
 

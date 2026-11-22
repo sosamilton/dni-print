@@ -1,4 +1,5 @@
 // Runs in Chromium (driven by scripts/compare-engines.ts): scanic needs ImageData and OpenCV.js needs wasm.
+import { createCardFitEngine } from '../../src/engines/cardfit-engine.ts'
 import { createOpenCvEngine } from '../../src/engines/opencv-engine.ts'
 import { createScanicEngine } from '../../src/engines/scanic-engine.ts'
 import type { DetectionEngine } from '../../src/engines/detection-engine.ts'
@@ -11,7 +12,7 @@ export type HarnessOutcome =
   | { status: 'engine-error' }
 export type HarnessResult = Record<string, HarnessOutcome>
 
-const engines: DetectionEngine[] = [createScanicEngine(), createOpenCvEngine()]
+const engines: DetectionEngine[] = [createCardFitEngine(), createScanicEngine(), createOpenCvEngine()]
 
 function fromBase64(b64: string): Uint8Array<ArrayBuffer> {
   const bin = atob(b64)

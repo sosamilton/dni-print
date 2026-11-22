@@ -57,11 +57,11 @@ describe('scanic input', () => {
 })
 
 describe('engine selection', () => {
-  it('defaults to scanic and rejects unknown ids', () => {
-    expect(resolveEngineId('')).toBe('scanic')
+  it('defaults to cardfit and rejects unknown ids', () => {
+    expect(resolveEngineId('')).toBe('cardfit')
     expect(resolveEngineId(' scanic ')).toBe('scanic')
-    // Only the engine chosen at build time is available (the CI matrix also runs unit tests with opencv).
-    const built = import.meta.env.VITE_DETECTION_ENGINE === 'opencv' ? 'opencv' : 'scanic'
+    // Only the engine chosen at build time is available (the CI matrix also runs unit tests with scanic and opencv).
+    const built = import.meta.env.VITE_DETECTION_ENGINE?.trim() || 'cardfit'
     expect(createDetectionEngine(built).id).toBe(built)
     expect(() => createDetectionEngine('foo')).toThrow(/foo/)
   })

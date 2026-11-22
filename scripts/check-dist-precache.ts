@@ -2,10 +2,12 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /** Problems with the service worker's precache manifest (empty = OK). */
-export function precacheProblems(swSource: string): string[] {
+export function precacheProblems(swSource: string, engine: string = 'cardfit'): string[] {
   const urls = [...swSource.matchAll(/url:\s*["']([^"']+)["']/g)].map((m) => m[1])
   if (urls.length === 0) return ['sw.js no tiene lista de precache']
-  return urls.some((u) => /(^|\/)(scanic|opencv)-[^/]*\.js$/.test(u)) ? [] : ['el precache de sw.js no lista el chunk del motor (scanic-*/opencv-*)']
+  // cardfit lives inside the worker bundle; scanic and opencv ship their own chunk, which must be precached too.
+  const chunk = engine === 'cardfit' ? /(^|\/)processing\.worker-[^/]*\.js$/ : new RegExp(`(^|/)${engine}-[^/]*\\.js$`)
+  return urls.some((u) => chunk.test(u)) ? [] : [`el precache de sw.js no lista el chunk del motor ${engine}`]
 }
 
 /** Problems with the web manifest; `fileExists` checks icon paths relative to dist/ (empty = OK). */
@@ -43,7 +45,7 @@ function main(): number {
   const manifest = resolve(dist, 'manifest.webmanifest')
   const source = readFileSync(sw, 'utf8')
   const problems = [
-    ...precacheProblems(source),
+    ...precacheProblems(source, process.env.VITE_DETECTION_ENGINE?.trim() || 'cardfit'),
     ...runtimeCachingProblems(source),
     ...manifestProblems(existsSync(manifest) ? readFileSync(manifest, 'utf8') : null, (p) => existsSync(resolve(dist, p))),
   ]

@@ -37,7 +37,7 @@ export function stubScanicMl(): Plugin {
 
 /** Engines that need `'unsafe-eval'` (OpenCV.js's emscripten glue uses `new Function`). */
 const EVAL_ENGINES = new Set(['opencv'])
-const KNOWN_ENGINES = new Set(['scanic', 'opencv'])
+const KNOWN_ENGINES = new Set(['cardfit', 'scanic', 'opencv'])
 
 /** Adds `'unsafe-eval'` to `script-src` of the CSP meta only for engines that need it; other builds keep AD-7 verbatim. */
 export function engineCsp(engineId: string): Plugin {
@@ -62,7 +62,7 @@ export function precacheOptions(engineId: string): { maximumFileSizeToCacheInByt
 export default defineConfig(({ mode }) => {
   // `.env*` files fill in what the real environment does not set.
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env }
-  const engineId = env.VITE_DETECTION_ENGINE?.trim() || 'scanic'
+  const engineId = env.VITE_DETECTION_ENGINE?.trim() || 'cardfit'
   if (!KNOWN_ENGINES.has(engineId)) {
     throw new Error(`VITE_DETECTION_ENGINE="${engineId}" is unknown (expected: ${[...KNOWN_ENGINES].join(', ')})`)
   }
