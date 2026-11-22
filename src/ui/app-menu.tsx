@@ -4,6 +4,8 @@ import { PrivacyDialog } from './privacy-dialog.tsx'
 import { appShareUrl, appWhatsappLink, shareApp } from './share-app.ts'
 import { currentSourceCodeUrl } from './source-link.ts'
 import { strings } from './strings.es.ts'
+import { themeStore } from './theme.ts'
+import { THEME_CHOICES } from './preferences.ts'
 import './app-menu.css'
 
 const SOURCE_CODE_URL = currentSourceCodeUrl()
@@ -86,6 +88,9 @@ export function AppMenu({ onRestart }: { onRestart?: () => void }) {
         <span aria-hidden="true">{strings.menu.button}</span>
       </button>
       <ul id={listId} className="app-menu-list" hidden={!menuOpen}>
+        <li>
+          <ThemeChoiceGroup />
+        </li>
         <li>
           <button type="button" className="app-menu-item" onClick={openPrivacy}>
             {strings.menu.privacy}
@@ -172,5 +177,32 @@ function SourceCodeItem({ onSelect }: { onSelect: () => void }) {
     >
       {strings.menu.sourceCode}
     </a>
+  )
+}
+
+/** «Tema»: Sistema / Claro / Oscuro as pressed buttons (CAP-6). Choosing one keeps the menu open. */
+function ThemeChoiceGroup() {
+  const choice = useSyncExternalStore(themeStore.subscribe, themeStore.getSnapshot)
+  const labelId = useId()
+  const copy = strings.menu.theme
+  return (
+    <div className="app-menu-theme">
+      <span id={labelId} className="app-menu-theme-label">
+        {copy.label}
+      </span>
+      <div className="app-menu-theme-options" role="group" aria-labelledby={labelId}>
+        {THEME_CHOICES.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className="app-menu-theme-option"
+            aria-pressed={choice === option}
+            onClick={() => themeStore.setChoice(option)}
+          >
+            {copy.options[option]}
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }

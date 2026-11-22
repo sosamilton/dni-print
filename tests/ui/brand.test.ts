@@ -1,21 +1,20 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { splitTokens } from './tokens-css.ts'
 
 const root = join(import.meta.dirname, '..', '..')
 const read = (...p: string[]) => readFileSync(join(root, ...p), 'utf8')
 
 describe('marca en la interfaz', () => {
-  const tokens = read('src', 'ui', 'styles', 'tokens.css')
-  const at = tokens.indexOf('@media (prefers-color-scheme: dark)')
-  const light = tokens.slice(0, at)
-  const dark = tokens.slice(at)
+  const { light, systemDark, explicitDark } = splitTokens(read('src', 'ui', 'styles', 'tokens.css').replace(/\/\*[\s\S]*?\*\//g, ''))
 
   it('declara celeste, sol y el color de las esquinas como en identity.md', () => {
     expect(light).toMatch(/--color-celeste:\s*#74ACDF;/i)
     expect(light).toMatch(/--color-sol:\s*#F6B40E;/i)
     expect(light).toMatch(/--color-brand-corners:\s*#2563A8;/i)
-    expect(dark).toMatch(/--color-brand-corners:\s*#74ACDF;/i)
+    expect(systemDark).toMatch(/--color-brand-corners:\s*#74ACDF;/i)
+    expect(explicitDark).toMatch(/--color-brand-corners:\s*#74ACDF;/i)
   })
 
   it('el componente usa la geometría de identity.md', () => {

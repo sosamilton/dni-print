@@ -27,6 +27,10 @@ export const strings = {
     shareAppCopied: 'Enlace copiado',
     shareAppCopyFailed: 'No pudimos copiar el enlace. Copialo a mano desde la barra de direcciones.',
     shareAppWhatsapp: 'Abrir WhatsApp',
+    theme: {
+      label: 'Tema',
+      options: { system: 'Sistema', light: 'Claro', dark: 'Oscuro' },
+    },
   },
   shareApp: {
     title: 'DNI Print',

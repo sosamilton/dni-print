@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { blockAfter, splitTokens } from './tokens-css.ts'
 
 const repoRoot = join(import.meta.dirname, '..', '..')
 const stylesDir = join(repoRoot, 'src', 'ui', 'styles')
@@ -21,13 +22,6 @@ function declarations(css: string): Map<string, string> {
     map.set(match[1], match[2].trim())
   }
   return map
-}
-
-/** Splits tokens.css into the base `:root` block and the dark-mode block. */
-function splitTokens(css: string): { light: string; dark: string } {
-  const at = css.indexOf('@media (prefers-color-scheme: dark)')
-  expect(at).toBeGreaterThan(-1)
-  return { light: css.slice(0, at), dark: css.slice(at) }
 }
 
 const LIGHT_COLORS: Record<string, string> = {
@@ -92,9 +86,9 @@ function cssFilesUnder(dir: string): string[] {
 const rel = (path: string) => relative(repoRoot, path).split(sep).join('/')
 
 describe('design tokens', () => {
-  const { light, dark } = splitTokens(readCss(tokensPath))
+  const css = readCss(tokensPath)
+  const { light, systemDark, explicitDark } = splitTokens(css)
   const lightTokens = declarations(light)
-  const darkTokens = declarations(dark)
 
   it('declares color-scheme light dark', () => {
     expect(light).toMatch(/color-scheme:\s*light dark;/)
@@ -106,10 +100,24 @@ describe('design tokens', () => {
     }
   })
 
-  it('redefines the -dark colors inside prefers-color-scheme: dark', () => {
+  it.each([
+    ['prefers-color-scheme: dark without data-theme=light', () => systemDark],
+    ['data-theme=dark', () => explicitDark],
+  ])('redefines the -dark colors for %s', (_, block) => {
+    const darkTokens = declarations(block())
     for (const [name, value] of Object.entries(DARK_COLORS)) {
       expect(darkTokens.get(`--color-${name}`)?.toUpperCase(), name).toBe(value)
     }
+    expect(block()).toMatch(/color-scheme:\s*dark;/)
+  })
+
+  it('keeps both dark blocks identical', () => {
+    expect(declarations(systemDark)).toEqual(declarations(explicitDark))
+    expect(systemDark.replace(/\s+/g, ' ').trim()).toBe(explicitDark.replace(/\s+/g, ' ').trim())
+  })
+
+  it('forces the light color-scheme with data-theme=light', () => {
+    expect(blockAfter(css, ":root[data-theme='light']")).toMatch(/color-scheme:\s*light;/)
   })
 
   it('declares every typography role as in DESIGN.md', () => {

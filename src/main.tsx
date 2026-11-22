@@ -7,7 +7,10 @@ import { App } from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 import { startPipeline } from './ui/pipeline.ts'
 import { updatePrompt } from './ui/update-prompt.ts'
+import { themeStore } from './ui/theme.ts'
 
+// public/theme-boot.js already applied the saved theme before the first paint; this keeps the store in sync.
+themeStore.init()
 startPipeline()
 // Registers the SW (precache only). `prompt` mode: it never reloads the page by itself.
 const updateSW = registerSW({

@@ -102,8 +102,13 @@
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
+/*
+ * Dark tokens (CAP-6). `data-theme` on <html> is set by public/theme-boot.js and src/ui/theme.ts:
+ * none = follow the system, 'light' = always light, 'dark' = always dark.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
     --color-surface-base: #12181D;
     --color-surface-raised: #1B232A;
     --color-ink-primary: #E8EDF0;
@@ -114,6 +119,23 @@
     --color-placeholder: #242D34;
     --color-brand-corners: #74ACDF;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-surface-base: #12181D;
+  --color-surface-raised: #1B232A;
+  --color-ink-primary: #E8EDF0;
+  --color-ink-secondary: #9AA7B1;
+  --color-accent: #7DB0E8;
+  --color-accent-soft: #1C2E42;
+  --color-border-hairline: #2B353D;
+  --color-placeholder: #242D34;
+  --color-brand-corners: #74ACDF;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 /* Wide windows (>= 900px, UX-DR12): print step in two columns. Media queries cannot read var(), so the literals live here. */
