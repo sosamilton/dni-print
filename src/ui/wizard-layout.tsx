@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { updatePrompt } from './update-prompt.ts'
 import { AppMenu } from './app-menu.tsx'
+import { Brand } from './brand.tsx'
 import { strings } from './strings.es.ts'
 import { STEP_COUNT } from './wizard-steps.ts'
 import './wizard-layout.css'
@@ -47,6 +48,7 @@ export function WizardLayout({
     <div className="wizard">
       <header className="wizard-header">
         <div className="wizard-header-bar">
+          <Brand />
           {onBack && (
             <button type="button" className="wizard-back" onClick={onBack}>
               {strings.wizard.back}

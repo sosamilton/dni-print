@@ -17,6 +17,9 @@
   --color-placeholder: #ECEAE4;
   --color-warning: #9A5B00;
   --color-danger: #B3261E;
+  --color-celeste: #74ACDF;
+  --color-sol: #F6B40E;
+  --color-brand-corners: #2563A8;
 
   /* typography */
   --font-title-family: 'Familjen Grotesk', system-ui, sans-serif;
@@ -76,6 +79,9 @@
   --progress-rounded: 3px;
   --hairline: 1px;
   --hit-area: 44px;
+  --brand-mark-size: 32px;
+  --brand-gap: 6px;
+  --font-brand-size: 20px;
   --face-thumb-width: 92px;
   --face-thumb-height: 58px;
   --preview-max-width: 220px;
@@ -99,6 +105,7 @@
     --color-accent-soft: #1C2E42;
     --color-border-hairline: #2B353D;
     --color-placeholder: #242D34;
+    --color-brand-corners: #74ACDF;
   }
 }
 

@@ -1,0 +1,30 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--brand-gap);
+  margin-right: var(--spacing-3);
+}
+
+.brand-mark {
+  width: var(--brand-mark-size);
+  height: var(--brand-mark-size);
+  flex: none;
+}
+
+.brand-corners { stroke: var(--color-brand-corners); }
+.brand-card { fill: var(--color-celeste); }
+.brand-sun { fill: var(--color-sol); }
+.brand-line { fill: var(--color-on-accent); }
+
+.brand-wordmark {
+  font-family: var(--font-title-family);
+  font-size: var(--font-brand-size);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-print {
+  color: var(--color-brand-corners);
+  font-weight: 500;
+}
