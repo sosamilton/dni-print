@@ -16,6 +16,7 @@
     "preview": "vite preview",
     "make:icons": "node scripts/make-icons.ts",
     "check:dist": "node scripts/check-dist-urls.ts",
+    "check:seo": "node scripts/check-dist-seo.ts",
     "check:engine": "node scripts/check-dist-engine.ts",
     "check:precache": "node scripts/check-dist-precache.ts",
     "compare-engines": "node scripts/compare-engines.ts",

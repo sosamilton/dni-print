@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -11,6 +11,9 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FBFAF7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12202E" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href="%CANONICAL_URL%" />
     <title>DNI Print: imprimí tu DNI a tamaño real</title>
     <meta
       name="description"
@@ -36,9 +39,46 @@
       content="Frente y dorso en una hoja A4, desde el celular o la compu. Todo pasa en tu dispositivo: sin cuentas ni subir fotos."
     />
     <meta name="twitter:image" content="%OG_IMAGE_URL%" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "DNI Print",
+        "url": "%CANONICAL_URL%",
+        "description": "Frente y dorso de tu DNI en una hoja A4, a tamaño real, desde el celular o la compu. Todo pasa en tu dispositivo.",
+        "inLanguage": "es-AR",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Cualquiera",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ARS" }
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <h1>DNI Print: imprimí tu DNI a tamaño real</h1>
+        <p>Frente y dorso en una hoja A4, desde el celular o la compu. Ideal para una fotocopia de DNI desde el celular.</p>
+        <h2>Cómo funciona</h2>
+        <ol>
+          <li>Sacale una foto al frente y otra al dorso de tu DNI, o elegí las imágenes.</li>
+          <li>Ajustá el recorte de cada cara si hace falta.</li>
+          <li>Descargá el PDF e imprimilo a tamaño real: queda el DNI frente y dorso en una hoja A4.</li>
+        </ol>
+        <h2>Privacidad</h2>
+        <p>Todo pasa en tu dispositivo. No hay cuentas, no se suben fotos y nada se envía a ningún servidor.</p>
+        <h2>Preguntas frecuentes</h2>
+        <h3>¿Cómo imprimo mi DNI a tamaño real?</h3>
+        <p>Armá el PDF con DNI Print e imprimilo en «Tamaño real» (sin ajustar a la página). Podés comprobarlo con la regla de 10 cm.</p>
+        <h3>¿Puedo hacer la fotocopia de mi DNI desde el celular?</h3>
+        <p>Sí. Fotografiás cada cara con el celular y la app arma la hoja lista para imprimir.</p>
+        <h3>¿El DNI frente y dorso entra en una hoja A4?</h3>
+        <p>Sí, las dos caras quedan en una sola hoja A4, a su tamaño real.</p>
+        <h3>¿Se suben mis fotos a internet?</h3>
+        <p>No. El procesamiento ocurre en tu navegador y las imágenes no salen de tu dispositivo.</p>
+        <h3>¿Cuesta algo?</h3>
+        <p>No, es gratis y no necesita cuenta.</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

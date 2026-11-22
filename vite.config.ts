@@ -18,6 +18,7 @@ export function stripCspInDev(): Plugin {
   }
 }
 
+const JSON_LD_BLOCK = /[ \t]*<script\b[^>]*application\/ld\+json[^>]*>[\s\S]*?<\/script>\r?\n?/gi
 const SHARE_TAG_LINE = /^[ \t]*<(?:meta|link)\b[^>]*%(?:CANONICAL_URL|OG_IMAGE_URL)%[^>]*>\r?\n?/gm
 
 /**
@@ -28,10 +29,30 @@ export function sharePreview(canonical: string | null): Plugin {
   return {
     name: 'share-preview',
     transformIndexHtml: (html) => {
-      if (!canonical) return html.replace(SHARE_TAG_LINE, '')
+      if (!canonical) return html.replace(JSON_LD_BLOCK, '').replace(SHARE_TAG_LINE, '')
       return html
         .replaceAll('%CANONICAL_URL%', canonical)
         .replaceAll('%OG_IMAGE_URL%', `${canonical}og-image.png`)
+    },
+  }
+}
+
+/** Emite `robots.txt` y `sitemap.xml` con la URL canónica del build; sin sitio conocido no emite nada. */
+export function seoFiles(canonical: string | null): Plugin {
+  return {
+    name: 'seo-files',
+    generateBundle() {
+      if (!canonical) return
+      this.emitFile({
+        type: 'asset',
+        fileName: 'robots.txt',
+        source: `User-agent: *\nAllow: /\n\nSitemap: ${canonical}sitemap.xml\n`,
+      })
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sitemap.xml',
+        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${canonical}</loc></url>\n</urlset>\n`,
+      })
     },
   }
 }
@@ -101,6 +122,7 @@ export default defineConfig(({ mode }) => {
       engineCsp(engineId),
       stubScanicMl(),
       sharePreview(siteUrl),
+      seoFiles(siteUrl),
       VitePWA({
         strategies: 'generateSW',
         registerType: 'prompt',
@@ -110,7 +132,10 @@ export default defineConfig(({ mode }) => {
           name: 'DNI Print',
           short_name: 'DNI Print',
           description: 'Imprimí tu DNI a tamaño real desde el navegador, sin enviar datos.',
-          lang: 'es',
+          id: base,
+          categories: ['utilities', 'productivity'],
+          lang: 'es-AR',
+          shortcuts: [{ name: 'Empezar', short_name: 'Empezar', url: base }],
           display: 'standalone',
           start_url: base,
           scope: base,

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
 /** Problems with the service worker's precache manifest (empty = OK). */
@@ -54,4 +55,4 @@ function main(): number {
   return problems.length === 0 ? 0 : 1
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exitCode = main()
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = main()

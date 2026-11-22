@@ -56,3 +56,16 @@ test('sin Web Share copia el enlace y ofrece abrir WhatsApp', async ({ page }) =
   expect(await link.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\?text=/)
   expect(await page.evaluate(() => (window as unknown as { __copied: string }).__copied)).toMatch(/^https:\/\//)
 })
+
+test('el HTML estático trae canonical, JSON-LD y contenido indexable, y React lo reemplaza al montar', async ({ request, baseURL, page }) => {
+  const html = await (await request.get(baseURL!)).text()
+  const canonical = /<link[^>]*rel="canonical"[^>]*href="([^"]*)"/.exec(html)?.[1]
+  expect(canonical).toMatch(/^https:\/\/.+\/$/)
+  expect(html).toContain('lang="es-AR"')
+  expect(html.match(/<h1\b/g)).toHaveLength(1)
+  expect(html).toContain('application/ld+json')
+  expect((await request.get('sitemap.xml')).ok()).toBe(true)
+  expect(await (await request.get('robots.txt')).text()).toContain(`Sitemap: ${canonical}sitemap.xml`)
+  await page.goto('./')
+  await expect(page.getByRole('heading', { name: 'Preguntas frecuentes' })).toHaveCount(0)
+})

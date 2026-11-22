@@ -1,4 +1,6 @@
 [
+  {"url": "http://www.sitemaps.org/schemas/sitemap/0.9", "match": "exact", "reason": "Namespace XML de dist/sitemap.xml; no genera requests."},
+  {"url": "https://schema.org", "match": "exact", "reason": "Contexto del bloque JSON-LD (datos, no script ejecutable) en index.html; nunca se pide."},
   {"url": "https://bit.ly/wb-precache", "match": "exact", "reason": "Texto de un mensaje de error en workbox-precaching (service worker); nunca se pide."},
   {"url": "http://www.w3.org/2000/svg", "match": "exact", "reason": "Namespace XML de SVG (React DOM y favicon); no genera requests."},
   {"url": "http://www.w3.org/1999/xlink", "match": "exact", "reason": "Namespace XML de XLink (React DOM); no genera requests."},

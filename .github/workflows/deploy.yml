@@ -62,6 +62,9 @@ jobs:
       - name: URLs en dist/
         run: npm run check:dist
 
+      - name: SEO en dist/
+        run: npm run check:seo
+
       - name: Motor único en dist/
         run: npm run check:engine
 
