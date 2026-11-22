@@ -65,9 +65,12 @@ function Icon({ d }: { d: string }) {
 interface FaceSlotProps {
   faceId: FaceId
   hasCamera: boolean
+  /** True when a pasted image should land in this face. */
+  pasteTarget: boolean
+  onFocusFace: (id: FaceId) => void
 }
 
-function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
+function FaceSlot({ faceId, hasCamera, pasteTarget, onFocusFace }: FaceSlotProps) {
   const face = useSession((s) => s.faces[faceId])
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +106,20 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
     setProcessing(false)
   }
 
+  const loadRef = useRef(load)
+  loadRef.current = load
+  useEffect(() => {
+    if (!pasteTarget) return
+    const onPaste = (event: ClipboardEvent) => {
+      const file = Array.from(event.clipboardData?.files ?? []).find((f) => f.type.startsWith('image/'))
+      if (!file) return
+      event.preventDefault()
+      void loadRef.current(file)
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [pasteTarget])
+
   function takePhoto() {
     if (liveCamera) setCameraOpen(true)
     else cameraRef.current?.click()
@@ -121,6 +138,7 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
       data-dragging={dragging}
       data-face={faceId}
       aria-label={label}
+      onFocus={() => onFocusFace(faceId)}
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -151,7 +169,7 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
             {status === 'empty' && strings.loadStep.missing}
             {status === 'error' && error}
           </span>
-          <span className="face-hint">{face ? strings.loadStep.replaceHint : strings.loadStep.dropHint}</span>
+          <span className="face-hint">{face ? strings.loadStep.replaceHint : liveCamera ? strings.loadStep.dropHintDesktop : strings.loadStep.dropHint}</span>
         </span>
       </button>
       {face && status === 'loaded' && isBlurry(face.sharpness) && (
@@ -216,6 +234,10 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
 export function LoadStep() {
   const profileId = useSession((s) => s.profileId)
   const hasCamera = useHasCamera()
+  const faces = useSession((s) => s.faces)
+  const [focused, setFocused] = useState('front' as FaceId)
+  // A pasted image goes to the first empty face; with both loaded, to the one that has focus.
+  const pasteFace: FaceId = !faces.front ? 'front' : !faces.back ? 'back' : focused
   return (
     <div className="load-step">
       <label className="load-field">
@@ -233,7 +255,7 @@ export function LoadStep() {
         </select>
       </label>
       {FACE_IDS.map((id) => (
-        <FaceSlot key={id} faceId={id} hasCamera={hasCamera} />
+        <FaceSlot key={id} faceId={id} hasCamera={hasCamera} pasteTarget={pasteFace === id} onFocusFace={setFocused} />
       ))}
       <p className="load-privacy">{strings.loadStep.privacyNotice(isDesktop(currentNavigator()))}</p>
     </div>
