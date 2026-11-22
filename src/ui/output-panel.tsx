@@ -200,6 +200,8 @@ function OutputSheet({
     if (!sheet) return
     if (open && !sheet.open) {
       sheet.showModal()
+      // The same dialog is reused: start at the top, with the grip in view.
+      sheet.scrollTop = 0
       focusables(sheet)[0]?.focus()
     }
     if (!open && sheet.open) sheet.close()
@@ -357,13 +359,16 @@ function OutputOptions({
     link.remove()
     setTimeout(() => sessionStore.getState().releaseUrl(url), RELEASE_URL_MS)
   }
-  // In-memory only: the version (its bytes) already saved, so Save and Send never repeat it.
+  // In-memory only: the version (its bytes) already saved, so Send never repeats it.
   const savedRef = useRef(null as { bytes: Uint8Array; place: Promise<string> } | null)
-  /** Saves the current PDF once per version; starts inside the click. Resolves to where it went. */
-  function saveOnce(): Promise<string> | null {
+  /**
+   * Saves the current PDF; starts inside the click. Resolves to where it went. Send reuses a version
+   * already saved; an explicit «Guardar» (`force`) always saves again.
+   */
+  function saveOnce(force = false): Promise<string> | null {
     const pdf = build.pdf
     if (!pdf) return null
-    if (savedRef.current?.bytes === pdf.bytes) return savedRef.current.place
+    if (!force && savedRef.current?.bytes === pdf.bytes) return savedRef.current.place
     const name = pdfFileName(pdf.copies)
     let place: Promise<string>
     if (folder) {
@@ -381,7 +386,7 @@ function OutputOptions({
     return place
   }
   const onSave = act(() => {
-    void saveOnce()?.then(() => setAfter('saved'))
+    void saveOnce(true)?.then(() => setAfter('saved'))
   })
   const choose = () => void pickFolder().then((handle) => handle && setFolder(handle))
   const canChoose = supportsFolderPicker() && !folder

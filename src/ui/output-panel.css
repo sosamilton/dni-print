@@ -181,6 +181,11 @@ summary.output-card::-webkit-details-marker {
 }
 
 .output-sheet-handle {
+  /* The sheet scrolls when the send form is open; the grip stays reachable at the top. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface-raised);
   display: flex;
   justify-content: center;
   padding: var(--spacing-3) 0 var(--spacing-2);

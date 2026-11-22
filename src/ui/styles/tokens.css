@@ -99,6 +99,7 @@
   --output-icon-size: 24px;
   --sheet-grip-width: 40px;
   --sheet-grip-height: 4px;
+  --footer-clearance: 96px;
 }
 
 @media (prefers-reduced-motion: reduce) {

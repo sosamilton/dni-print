@@ -1,3 +1,8 @@
+/* Focus and scrollIntoView keep targets clear of the sticky footer. */
+html {
+  scroll-padding-bottom: var(--footer-clearance);
+}
+
 .wizard {
   display: flex;
   flex-direction: column;

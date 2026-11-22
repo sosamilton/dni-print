@@ -46,7 +46,8 @@ test('cargar, esquinas, 2 copias, Guardar PDF con 4 imágenes, aviso, Hacer otra
   await expect(page.getByRole('button', { name: steps.load.primary, exact: true })).toBeDisabled()
 })
 
-test('Imprimir ahora crea un iframe blob, llama a print y avisa sin violaciones de CSP', async ({ page }) => {
+test('Imprimir ahora crea un iframe blob, llama a print y avisa sin violaciones de CSP', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit se presenta como Safari macOS, que abre el PDF en una pestaña (test «Safari macOS»)')
   await page.addInitScript(() => {
     const w = window as unknown as { __prints: string[]; __cspViolations: string[] }
     w.__prints = []
