@@ -91,6 +91,11 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
     setProcessing(false)
   }
 
+  function takePhoto() {
+    if (liveCamera) setCameraOpen(true)
+    else cameraRef.current?.click()
+  }
+
   function onDrop(event: DragEvent) {
     event.preventDefault()
     setDragging(false)
@@ -137,16 +142,19 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
         </span>
       </button>
       {face && status === 'loaded' && isBlurry(face.sharpness) && (
-        <p className="face-warning" role="status">
-          {strings.photoWarnings.blurry}
-        </p>
+        <div className="face-warning">
+          <p role="status">{strings.photoWarnings.blurry}</p>
+          <button type="button" className="face-action" onClick={hasCamera ? takePhoto : () => galleryRef.current?.click()}>
+            {strings.photoWarnings.retake}
+          </button>
+        </div>
       )}
       <div className="face-actions">
         <button type="button" className="face-action" onClick={() => galleryRef.current?.click()}>
           {strings.loadStep.pickFromGallery}
         </button>
         {hasCamera && (
-          <button type="button" className="face-action" onClick={() => (liveCamera ? setCameraOpen(true) : cameraRef.current?.click())}>
+          <button type="button" className="face-action" onClick={takePhoto}>
             {strings.loadStep.takePhoto}
           </button>
         )}

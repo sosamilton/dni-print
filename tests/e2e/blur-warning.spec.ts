@@ -20,6 +20,9 @@ test('aviso de foto borrosa en los pasos 1 y 2, sin bloquear', async ({ page }) 
   await expect(warning).toBeVisible()
   await expect(page.getByText(photoWarnings.blurry)).toHaveCount(1)
   await expect(front.getByRole('button', { name: loadStep.pickFromGallery })).toBeVisible()
+  // Without a camera the warning's button falls back to the file picker; back face has no warning, so no button.
+  await expect(front.getByRole('button', { name: photoWarnings.retake })).toBeVisible()
+  await expect(back.getByRole('button', { name: photoWarnings.retake })).toHaveCount(0)
   const cont = page.getByRole('button', { name: steps.load.primary, exact: true })
   await expect(cont).toBeEnabled()
 

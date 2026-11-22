@@ -53,6 +53,7 @@ export const strings = {
   },
   photoWarnings: {
     blurry: 'La foto parece borrosa. Probá sacarla de nuevo con buena luz y el teléfono quieto.',
+    retake: 'Sacar otra',
   },
   camera: {
     title: 'Sacar foto con la cámara',
