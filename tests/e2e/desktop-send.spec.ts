@@ -7,6 +7,7 @@ import { installNetworkGuard, type NetworkGuard } from './network-guard.ts'
 const { steps, doneStep } = strings
 const d = doneStep.desktop
 const wa = doneStep.whatsapp
+const send = doneStep.send
 
 const test = base.extend<{ guard: NetworkGuard }>({
   guard: async ({ context, baseURL }, provide) => {
@@ -39,8 +40,10 @@ test('sin Web Share aparecen los botones y abren Gmail y WhatsApp Web', async ({
   await page.goto('./')
   await toDone(page)
   await expect(page.getByRole('button', { name: d.sendMail })).toBeVisible()
-  await expect(page.getByRole('button', { name: d.sendWhatsappWeb })).toBeVisible()
+  await expect(page.getByRole('button', { name: send.whatsappButton })).toBeVisible()
   await expect(page.getByText(d.dragHint)).toBeVisible()
+  await expect(page.getByText(send.attachHint)).toBeVisible()
+  await expect(page.getByRole('button', { name: d.useMailProgram })).toBeVisible()
 
   await page.getByLabel(d.emailLabel).fill('mal')
   await page.getByRole('button', { name: d.sendMail }).click()
@@ -50,10 +53,10 @@ test('sin Web Share aparecen los botones y abren Gmail y WhatsApp Web', async ({
   const [mail] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: d.sendMail }).click()])
   expect(mail).toBeTruthy()
 
-  await page.getByRole('button', { name: d.sendWhatsappWeb }).click()
+  await page.getByRole('button', { name: send.whatsappButton }).click()
   await expect(page.getByRole('alert')).toHaveText(wa.empty)
   await page.getByLabel(wa.label).fill('011 15 2345-6789')
-  const [chat] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: d.sendWhatsappWeb }).click()])
+  const [chat] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: send.whatsappButton }).click()])
   expect(chat).toBeTruthy()
 
   const requests = guard.externalRequests()
@@ -61,13 +64,14 @@ test('sin Web Share aparecen los botones y abren Gmail y WhatsApp Web', async ({
   expect(requests).toContain(`https://web.whatsapp.com/send?phone=5491123456789&text=${encodeURIComponent(wa.message)}`)
 })
 
-test('con Web Share no aparecen los botones de escritorio', async ({ page }) => {
+test('con Web Share «Compartir PDF» es lo principal y Otras formas queda cerrado', async ({ page }) => {
   await fakeShare(page)
   await page.goto('./')
   await toDone(page)
   await expect(page.getByRole('button', { name: doneStep.share })).toBeVisible()
-  await expect(page.getByRole('button', { name: d.sendMail })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: d.sendWhatsappWeb })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: d.sendMail })).toBeHidden()
+  await page.getByText(send.others).click()
+  await expect(page.getByRole('button', { name: d.sendMail })).toBeVisible()
 })
 
 test('Empezar de nuevo vacía el correo', async ({ page }) => {

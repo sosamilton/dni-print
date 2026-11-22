@@ -27,10 +27,9 @@
 .ios-guide ol { margin: 0; padding-left: var(--spacing-4); }
 .share-button { display: block; width: 100%; min-height: var(--button-min-height); padding: var(--button-padding); border: var(--hairline) solid var(--color-accent); border-radius: var(--rounded-lg); background: var(--color-surface-raised); color: var(--color-accent); font-family: var(--font-button-family); font-size: var(--font-button-size); font-weight: var(--font-button-weight); line-height: var(--font-button-line-height); cursor: pointer; }
 .share-button:focus-visible { outline: var(--focus-ring-width) solid var(--color-ink-primary); outline-offset: calc(var(--hairline) * 2); }
-.whatsapp-panel { display: grid; gap: var(--spacing-2); }
 .whatsapp-label { font-size: var(--font-label-size); }
 .whatsapp-hint { font-size: var(--font-small-size); }
-.whatsapp-steps { margin: 0; padding-left: var(--spacing-4); }
-.whatsapp-panel[hidden] { display: none; }
 .desktop-send { display: grid; gap: var(--spacing-2); }
 .link-button { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; justify-self: start; font: inherit; }
+.send-section { display: grid; gap: var(--spacing-2); }
+.send-others summary { cursor: pointer; padding: var(--spacing-2) 0; font-size: var(--font-label-size); }

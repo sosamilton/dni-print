@@ -39,31 +39,29 @@ async function toDone(page: Page) {
 }
 
 async function openPanel(page: Page) {
-  const toggle = page.getByRole('button', { name: wa.toggle })
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  const others = page.getByText(doneStep.send.others)
+  if (!(await page.getByLabel(wa.label).isVisible())) await others.click()
   return page.getByLabel(wa.label)
 }
 
-test('muestra el campo, rechaza un número inválido y abre wa.me con uno válido', async ({ page, context, guard }) => {
+test('muestra el campo, rechaza un número inválido y abre WhatsApp Web con uno válido (escritorio)', async ({ page, context, guard }) => {
   await fakeShare(page, true)
   await page.goto('./')
   await toDone(page)
 
   await expect(page.getByLabel(wa.label)).toBeHidden()
+  await expect(page.getByText(doneStep.send.attachHint)).toBeHidden()
   const field = await openPanel(page)
   await expect(field).toBeVisible()
   await expect(field).toHaveAttribute('type', 'tel')
   await expect(field).toHaveAttribute('inputmode', 'tel')
   await expect(field).toHaveAttribute('autocomplete', 'off')
   await expect(field).toHaveAccessibleDescription(wa.hint)
-  await expect(page.getByText(wa.stepOpenChat)).toBeVisible()
-  await expect(page.getByText(wa.stepShare)).toBeVisible()
+  await expect(page.getByText(doneStep.send.attachHint)).toBeVisible()
 
   let pages = 0
   context.on('page', () => pages++)
-  const submit = page.getByRole('button', { name: wa.submit })
+  const submit = page.getByRole('button', { name: doneStep.send.whatsappButton })
 
   await submit.click()
   await expect(page.getByRole('alert')).toHaveText(wa.empty)
@@ -80,17 +78,16 @@ test('muestra el campo, rechaza un número inválido y abre wa.me con uno válid
   const [popup] = await Promise.all([page.waitForEvent('popup'), submit.click()])
   expect(popup).toBeTruthy()
   await expect(page.getByRole('alert')).toHaveCount(0)
-  const expected = `https://wa.me/5491123456789?text=${encodeURIComponent(wa.message)}`
+  const expected = `https://web.whatsapp.com/send?phone=5491123456789&text=${encodeURIComponent(wa.message)}`
   await expect.poll(() => guard.externalRequests()).toEqual([expected])
 })
 
-test('sin soporte para compartir archivos, el segundo paso remite al PDF descargado', async ({ page }) => {
+test('sin soporte para compartir archivos, Otras formas de enviar arranca abierta', async ({ page }) => {
   await fakeShare(page, false)
   await page.goto('./')
   await toDone(page)
-  await openPanel(page)
-  await expect(page.getByText(wa.stepAttach)).toBeVisible()
-  await expect(page.getByText(wa.stepShare)).toHaveCount(0)
+  await expect(page.getByLabel(wa.label)).toBeVisible()
+  await expect(page.getByText(doneStep.send.attachHint)).toBeVisible()
 })
 
 test('Empezar de nuevo vacía el número y no queda en almacenamiento', async ({ page }) => {
@@ -106,4 +103,22 @@ test('Empezar de nuevo vacía el número y no queda en almacenamiento', async ({
 
   await toDone(page)
   await expect(await openPanel(page)).toHaveValue('')
+})
+
+test.describe('celular', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36' })
+
+  test('abre wa.me y no muestra lo exclusivo de escritorio; Enter envía', async ({ page, guard }) => {
+    await page.goto('./')
+    await toDone(page)
+    await expect(page.getByRole('button', { name: doneStep.desktop.useMailProgram })).toHaveCount(0)
+    await expect(page.getByText(doneStep.desktop.dragHint)).toHaveCount(0)
+    await expect(page.getByText(doneStep.send.attachHint)).toBeVisible()
+    const field = await openPanel(page)
+    await field.fill('011 15 2345-6789')
+    const [popup] = await Promise.all([page.waitForEvent('popup'), field.press('Enter')])
+    expect(popup).toBeTruthy()
+    const expected = `https://wa.me/5491123456789?text=${encodeURIComponent(wa.message)}`
+    await expect.poll(() => guard.externalRequests()).toEqual([expected])
+  })
 })

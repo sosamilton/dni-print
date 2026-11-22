@@ -1,8 +1,5 @@
-// Pure helpers for desktop sending: Gmail / mailto / WhatsApp Web links and the decision to show them.
+// Pure helpers for desktop sending: Gmail / mailto / WhatsApp Web links.
 // Opening these links is a user-initiated navigation, never a request made by the app.
-
-import { canSharePdf } from './share-pdf.ts'
-import type { ShareNavigator } from './share-pdf.ts'
 
 const EMAIL = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:"]{2,}$/
 
@@ -26,9 +23,4 @@ export function mailtoUrl(to: string, subject: string, body: string): string {
 
 export function whatsappWebUrl(digits: string, text: string): string {
   return `https://web.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(text)}`
-}
-
-/** Desktop send buttons show only where the browser cannot share files; never throws. */
-export function showDesktopSend(nav: ShareNavigator, file: File | null): boolean {
-  return file !== null && !canSharePdf(nav, file)
 }
