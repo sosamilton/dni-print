@@ -70,7 +70,7 @@ test('guardar, recargar sin conexión y empezar un trámite con esos valores; Bo
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
-        const req = indexedDB.open('dni-print-prefs', 1)
+        const req = indexedDB.open('dni-print-prefs')
         req.onsuccess = () => {
           req.result.close()
           resolve()

@@ -67,6 +67,13 @@ export const strings = {
     erase: 'Borrar preferencias',
     erased: 'Preferencias borradas.',
     close: 'Cerrar',
+    folderLabel: 'Carpeta de guardado',
+    folderNone: 'Sin carpeta: «Guardar» descarga en tu carpeta de descargas.',
+    folderChosen: (name: string) => `Guardar escribe en la carpeta «${name}».`,
+    folderPick: 'Elegir carpeta',
+    folderChange: 'Cambiar carpeta',
+    folderRemove: 'Quitar carpeta',
+    folderUnsupported: 'Este navegador no puede elegir una carpeta: «Guardar» usa la carpeta de descargas.',
   },
   privacyDialog: {
     title: 'Cómo funciona y privacidad',
@@ -172,6 +179,7 @@ export const strings = {
       save: {
         title: { phone: 'Guardar en el teléfono', pdf: 'Guardar PDF' },
         help: { phone: 'Queda en Descargas o en Archivos.', pdf: 'Queda en tu carpeta de descargas.' },
+        helpFolder: (name: string) => `Queda en la carpeta «${name}».`,
       },
       send: { title: 'Mandar a un número de WhatsApp o un mail', help: 'Abrimos el chat o el correo con el mensaje listo.' },
     },

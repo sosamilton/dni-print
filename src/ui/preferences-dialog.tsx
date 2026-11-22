@@ -7,6 +7,7 @@ import { MAX_MARGIN_MM, MIN_MARGIN_MM } from './print-step-model.ts'
 import { validateEmail } from './send-links.ts'
 import { strings } from './strings.es.ts'
 import { themeStore } from './theme.ts'
+import { clearFolder, loadFolder, pickFolder, supportsFolderPicker, type FolderHandle } from './save-folder.ts'
 import { normalizeArPhone } from './whatsapp.ts'
 
 export interface PreferencesDialogProps {
@@ -49,6 +50,17 @@ function PreferencesForm({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState(initial.email)
   const [errors, setErrors] = useState({ whatsapp: false, email: false, margin: false, watermark: false })
   const [status, setStatus] = useState('')
+  const folderSupported = supportsFolderPicker()
+  const [folder, setFolder] = useState(null as FolderHandle | null)
+
+  useEffect(() => {
+    if (!folderSupported) return
+    let alive = true
+    void loadFolder().then((handle) => alive && setFolder(handle))
+    return () => {
+      alive = false
+    }
+  }, [folderSupported])
 
   const save = () => {
     const marginMm = Number(margin)
@@ -89,6 +101,7 @@ function PreferencesForm({ onClose }: { onClose: () => void }) {
     setWhatsapp('')
     setEmail('')
     setErrors({ whatsapp: false, email: false, margin: false, watermark: false })
+    setFolder(null)
     setStatus(copy.erased)
   }
 
@@ -201,6 +214,29 @@ function PreferencesForm({ onClose }: { onClose: () => void }) {
         />
         {errors.email && <span className="prefs-error" role="alert">{copy.invalidEmail}</span>}
       </label>
+
+      <div className="prefs-field">
+        <span>{copy.folderLabel}</span>
+        <p className="privacy-dialog-text">
+          {!folderSupported ? copy.folderUnsupported : folder ? copy.folderChosen(folder.name) : copy.folderNone}
+        </p>
+        {folderSupported && (
+          <div className="prefs-options">
+            <button
+              type="button"
+              className="prefs-option"
+              onClick={() => void pickFolder().then((handle) => handle && setFolder(handle))}
+            >
+              {folder ? copy.folderChange : copy.folderPick}
+            </button>
+            {folder && (
+              <button type="button" className="prefs-option" onClick={() => void clearFolder().then(() => setFolder(null))}>
+                {copy.folderRemove}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <p className="privacy-dialog-text" role="status">{status}</p>
 

@@ -21,6 +21,7 @@ import { gmailUrl, mailtoUrl, validateEmail } from './send-links.ts'
 import { planOutput, planSend, whatsappLink, type OutputOption, type OutputPlan, type SendPlan } from './send-plan.ts'
 import { sessionStore, useSession } from './session-store.ts'
 import { readPrefs } from './preferences-store.ts'
+import { loadFolder, supportsFolderPicker, writePdfToFolder, type FolderHandle } from './save-folder.ts'
 import { currentShareNavigator, pdfFile, pdfFileName, sharePdf } from './share-pdf.ts'
 import { strings } from './strings.es.ts'
 import { useWideLayout } from './use-wide-layout.ts'
@@ -291,6 +292,15 @@ function OutputOptions({
 }) {
   const copies = useSession((s) => s.copies)
   const [after, setAfter] = useState(null as After | null)
+  const [folder, setFolder] = useState(null as FolderHandle | null)
+  useEffect(() => {
+    if (!supportsFolderPicker()) return
+    let alive = true
+    void loadFolder().then((handle) => alive && setFolder(handle))
+    return () => {
+      alive = false
+    }
+  }, [])
   const [shareFailed, setShareFailed] = useState(false)
   const [printNote, setPrintNote] = useState(null as 'unavailable' | 'failed' | 'opened' | null)
   const afterRef = useRef(null as HTMLParagraphElement | null)
@@ -351,6 +361,15 @@ function OutputOptions({
     return true
   }
   const onSave = act(() => {
+    const pdf = build.pdf
+    if (folder && pdf) {
+      // The permission call runs first, still inside the click's user activation.
+      void writePdfToFolder(folder, pdf.bytes, pdfFileName(pdf.copies)).then((ok) => {
+        if (ok) setAfter('saved')
+        else if (downloadPdf()) setAfter('saved')
+      })
+      return
+    }
     if (downloadPdf()) setAfter('saved')
   })
 
@@ -381,7 +400,7 @@ function OutputOptions({
   const cards: Record<Exclude<OutputOption, 'send'>, { icon: IconName; title: string; help: string; onClick: () => void }> = {
     share: { icon: 'share', title: o.share.title, help: o.share.help, onClick: onShare },
     print: { icon: 'print', title: o.print.title, help: ios ? o.print.helpIos : o.print.help, onClick: onPrint },
-    save: { icon: 'save', title: o.save.title[plan.saveLabel], help: o.save.help[plan.saveLabel], onClick: onSave },
+    save: { icon: 'save', title: o.save.title[plan.saveLabel], help: folder ? o.save.helpFolder(folder.name) : o.save.help[plan.saveLabel], onClick: onSave },
   }
 
   return (
