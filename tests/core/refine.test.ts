@@ -51,6 +51,28 @@ describe('refineQuad', () => {
     expectImproves(makeScene({ width: W, height: H, corners: truth, occluders }), truth)
   })
 
+  it('finds the card edge behind a cast shadow that the detection took as part of the card', () => {
+    // 20 px shadow band glued to the left side, darker than both the background (120) and the card (220).
+    const occluders = [{ x0: 40, y0: 50, x1: 60, y1: 430, value: 10 }]
+    const image = makeScene({ width: W, height: H, corners: truth, background: 120, occluders })
+    const withShadow: Quad = [
+      { x: 40, y: 50 },
+      truth[1],
+      truth[2],
+      { x: 40, y: 430 },
+    ]
+    const refined = refineQuad(image, withShadow)
+    expect(refined).not.toBe(withShadow)
+    expect(meanCornerError(refined, truth)).toBeLessThan(1.5)
+  })
+
+  it('does not mistake the card for a shadow when it sits on a darker background', () => {
+    const image = makeScene({ width: W, height: H, corners: truth, background: 120 })
+    const start = perturb(truth, 6)
+    const refined = refineQuad(image, start)
+    expect(meanCornerError(refined, truth)).toBeLessThan(1.5)
+  })
+
   it('returns the same quad on a flat image', () => {
     const flat = { width: W, height: H, data: new Uint8ClampedArray(W * H * 4).fill(128) }
     const q = perturb(truth, 6)

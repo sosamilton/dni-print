@@ -21,6 +21,13 @@ const RANSAC_THRESHOLD_PX = 1.5
 const MIN_INLIERS = 8
 const MIN_INLIER_RATIO = 0.4
 const RANSAC_SEED = 0x6d2b79f5
+/** How far inside the detected side (fraction of the shortest side) a cast shadow may hide the real edge. */
+const SHADOW_BAND_FRACTION = 0.08
+/** A shadow is this much darker than both the background and the card (luma levels). */
+const SHADOW_MIN_DEPTH = 22
+const SHADOW_WINDOW_PX = 8
+/** At most this many sides may fall back to the detected line. */
+const MAX_KEPT_SIDES = 1
 
 interface Line {
   /** A point on the line. */
@@ -117,6 +124,62 @@ function edgePoints(img: PixelImage, a: Point, b: Point, halfStrip: number): { p
   return { points, samples }
 }
 
+/**
+ * Edge points of the card behind a cast shadow. The shadow's outer edge (background → shadow) is what a detector
+ * sees first; the card's own edge is the rise (shadow → card) a little further inside. Only a rise that ends a
+ * dark valley, below both the background and the card, counts: without a shadow nothing is returned.
+ */
+function shadowEdgePoints(img: PixelImage, a: Point, b: Point, halfStrip: number, band: number): { points: Point[]; samples: number } {
+  const len = Math.hypot(b.x - a.x, b.y - a.y)
+  const t = { x: (b.x - a.x) / len, y: (b.y - a.y) / len }
+  const n = { x: -t.y, y: t.x }
+  const span = len * (1 - 2 * END_SKIP)
+  const samples = Math.min(MAX_SAMPLES, Math.max(MIN_SAMPLES, Math.round(span / SAMPLE_SPACING_PX)))
+  const k = Math.ceil(halfStrip)
+  const far = Math.ceil(band)
+  const profile = new Float64Array(k + far + 1)
+  const points: Point[] = []
+  const mean = (from: number, to: number) => {
+    let sum = 0
+    for (let i = from; i <= to; i++) sum += profile[i]
+    return sum / (to - from + 1)
+  }
+  for (let s = 0; s < samples; s++) {
+    const along = len * END_SKIP + (span * (s + 0.5)) / samples
+    const cx = a.x + t.x * along
+    const cy = a.y + t.y * along
+    let ok = true
+    for (const o of [-k, far]) {
+      for (const dt of [-1, 1]) {
+        if (!inside(img, cx + n.x * o + t.x * dt, cy + n.y * o + t.y * dt)) ok = false
+      }
+    }
+    if (!ok) continue
+    for (let o = -k; o <= far; o++) {
+      let sum = 0
+      for (let dt = -1; dt <= 1; dt++) sum += lumaAt(img, cx + n.x * o + t.x * dt, cy + n.y * o + t.y * dt)
+      profile[o + k] = sum / 3
+    }
+    const w = SHADOW_WINDOW_PX
+    const outside = mean(0, w)
+    // Outermost rise with a darker valley before it and a brighter card after it.
+    for (let i = w + 2; i < k + far - w - 1; i++) {
+      const g = (profile[i + 1] - profile[i - 1]) / 2
+      if (g < MIN_GRADIENT || g < (profile[i + 2] - profile[i]) / 2 || g <= (profile[i] - profile[i - 2]) / 2) continue
+      const valley = mean(i - w - 2, i - 3)
+      const card = mean(i + 3, i + 2 + w)
+      if (outside - valley < SHADOW_MIN_DEPTH || card - valley < SHADOW_MIN_DEPTH * 2 || card < 0.75 * outside) continue
+      const gm = (profile[i] - profile[i - 2]) / 2
+      const gp = (profile[i + 2] - profile[i]) / 2
+      const denom = gm - 2 * g + gp
+      const offset = i - k + (denom < 0 ? (0.5 * (gm - gp)) / denom : 0)
+      points.push({ x: cx + n.x * offset, y: cy + n.y * offset })
+      break
+    }
+  }
+  return { points, samples }
+}
+
 /** Total least squares line through points. Null when degenerate. */
 function fitLine(points: Point[]): Line | null {
   if (points.length < 2) return null
@@ -201,21 +264,43 @@ export function refineQuad(image: PixelImage, quad: Quad): Quad {
     const halfStrip = Math.max(MIN_STRIP_PX, STRIP_FRACTION * shortest)
     const maxMove = MAX_MOVE_STRIPS * halfStrip
 
+    const band = SHADOW_BAND_FRACTION * shortest
     const lines: Line[] = []
+    let kept = 0
+    // Per side: how far the refined line may sit from the detected one.
+    const allowance: number[] = []
     for (let i = 0; i < 4; i++) {
-      const { points, samples } = edgePoints(image, quad[i], quad[(i + 1) % 4], halfStrip)
-      const minInliers = Math.max(MIN_INLIERS, Math.ceil(MIN_INLIER_RATIO * samples))
-      const line = robustLine(points, minInliers)
-      if (!line) return quad
+      const a = quad[i]
+      const b = quad[(i + 1) % 4]
+      const shadowed = shadowEdgePoints(image, a, b, halfStrip, band)
+      const shadowLine = robustLine(shadowed.points, Math.max(MIN_INLIERS, Math.ceil(MIN_INLIER_RATIO * shadowed.samples)))
+      if (shadowLine) {
+        lines.push(shadowLine)
+        allowance.push(band + halfStrip)
+        continue
+      }
+      const { points, samples } = edgePoints(image, a, b, halfStrip)
+      const line = robustLine(points, Math.max(MIN_INLIERS, Math.ceil(MIN_INLIER_RATIO * samples)))
+      if (!line) {
+        // A soft or hidden side keeps its detected line; the others still sharpen their corners.
+        const t = { x: b.x - a.x, y: b.y - a.y }
+        const len = Math.hypot(t.x, t.y)
+        lines.push({ p: a, d: { x: t.x / len, y: t.y / len } })
+        allowance.push(0)
+        kept++
+        continue
+      }
       lines.push(line)
+      allowance.push(maxMove)
     }
+    if (kept > MAX_KEPT_SIDES) return quad
 
     const refined: Point[] = []
     for (let i = 0; i < 4; i++) {
       // Corner i joins side i-1 (quad[i-1] → quad[i]) and side i (quad[i] → quad[i+1]).
       const corner = intersect(lines[(i + 3) % 4], lines[i])
       if (!corner) return quad
-      if (Math.hypot(corner.x - quad[i].x, corner.y - quad[i].y) > maxMove) return quad
+      if (Math.hypot(corner.x - quad[i].x, corner.y - quad[i].y) > Math.max(allowance[(i + 3) % 4], allowance[i])) return quad
       refined.push(corner)
     }
     const result = refined as Quad
