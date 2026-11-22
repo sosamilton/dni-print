@@ -49,11 +49,6 @@ export function WizardLayout({
       <header className="wizard-header">
         <div className="wizard-header-bar">
           <Brand />
-          {onBack && (
-            <button type="button" className="wizard-back" onClick={onBack}>
-              {strings.wizard.back}
-            </button>
-          )}
           {updateAvailable && (
             <div className="wizard-update" role="status">
               <span>{strings.update.available}</span>
@@ -64,6 +59,13 @@ export function WizardLayout({
           )}
           <AppMenu onRestart={onRestart} />
         </div>
+        {onBack && (
+          <div className="wizard-back-row">
+            <button type="button" className="wizard-back" onClick={onBack}>
+              {strings.wizard.back}
+            </button>
+          </div>
+        )}
         <div
           className="wizard-progress"
           role="progressbar"
@@ -81,6 +83,11 @@ export function WizardLayout({
             />
           ))}
         </div>
+        <ol className="wizard-step-labels" aria-hidden="true">
+          {strings.wizard.stepLabels.map((name, i) => (
+            <li key={name} data-current={i + 1 === stepNumber}>{name}</li>
+          ))}
+        </ol>
         <p className="wizard-counter" aria-hidden="true">{strings.wizard.stepCounter(stepNumber, STEP_COUNT)}</p>
         <h1 className="wizard-title" ref={titleRef} tabIndex={-1}>
           {title}

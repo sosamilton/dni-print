@@ -34,6 +34,10 @@
   cursor: pointer;
 }
 
+.wizard-back-row { display: flex; }
+.wizard-step-labels { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: var(--spacing-1) 0 0; padding: 0; list-style: none; color: var(--color-ink-secondary); font-family: var(--font-meta-family); font-size: var(--font-meta-size); }
+.wizard-step-labels li[data-current='true'] { color: var(--color-accent); font-weight: 700; }
+
 .wizard-progress {
   display: grid;
   grid-auto-flow: column;
@@ -100,12 +104,16 @@
   font-size: var(--font-button-size);
   font-weight: var(--font-button-weight);
   line-height: var(--font-button-line-height);
+  box-shadow: var(--shadow-button);
   cursor: pointer;
 }
+
+.button-primary:focus-visible { outline: var(--focus-ring-width) solid var(--color-ink-primary); outline-offset: calc(var(--hairline) * 2); }
 
 .button-primary:disabled {
   background: var(--color-placeholder);
   color: var(--color-ink-secondary);
+  box-shadow: none;
   cursor: not-allowed;
 }
 

@@ -50,6 +50,14 @@ function Thumbnail({ bitmap, label }: { bitmap: BitmapLike; label: string }) {
   return <canvas ref={ref} className="face-thumb" role="img" aria-label={label} />
 }
 
+function Icon({ d }: { d: string }) {
+  return (
+    <svg className="face-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 interface FaceSlotProps {
   faceId: FaceId
   hasCamera: boolean
@@ -129,9 +137,10 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
         {thumb?.kind === 'loading' && (
           <span className="face-thumb face-thumb-loading" role="img" aria-label={strings.loadStep.thumbnailLoading(label)} />
         )}
-        {!face && <span className="face-placeholder" aria-hidden="true" />}
+        {!face && <span className="face-placeholder" aria-hidden="true">{strings.loadStep.addSymbol}</span>}
         <span className="face-text">
-          {!face && <span className="face-name" aria-hidden="true">{label}</span>}
+          <span className="face-name" aria-hidden="true">{label}</span>
+          {face && status === 'loaded' && <span className="face-badge" aria-hidden="true">{strings.loadStep.ready}</span>}
           <span className="face-status" role="status">
             {status === 'processing' && strings.loadStep.processing}
             {status === 'loaded' && strings.loadStep.loaded(label)}
@@ -151,10 +160,12 @@ function FaceSlot({ faceId, hasCamera }: FaceSlotProps) {
       )}
       <div className="face-actions">
         <button type="button" className="face-action" onClick={() => galleryRef.current?.click()}>
+          <Icon d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" />
           {strings.loadStep.pickFromGallery}
         </button>
         {hasCamera && (
           <button type="button" className="face-action" onClick={takePhoto}>
+            <Icon d="M4 8h4l2-3h4l2 3h4v11H4zM12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
             {strings.loadStep.takePhoto}
           </button>
         )}

@@ -25,6 +25,7 @@ export function DoneStep() {
   return (
     <div className="print-step">
       <p className="print-notice">{strings.doneStep.instruction}</p>
+      <p className="print-notice">{strings.steps.done.note}</p>
       {canShare && (
         <button type="button" className="share-button" onClick={onShare}>
           {strings.doneStep.share}

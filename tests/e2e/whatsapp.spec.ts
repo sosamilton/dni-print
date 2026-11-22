@@ -93,7 +93,7 @@ test('sin soporte para compartir archivos, el segundo paso remite al PDF descarg
   await expect(page.getByText(wa.stepShare)).toHaveCount(0)
 })
 
-test('Borrar fotos vacía el número y no queda en almacenamiento', async ({ page }) => {
+test('Empezar de nuevo vacía el número y no queda en almacenamiento', async ({ page }) => {
   await page.goto('./')
   await toDone(page)
   const field = await openPanel(page)

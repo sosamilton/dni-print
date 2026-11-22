@@ -11,6 +11,20 @@ import './crop-step.css'
 
 const CROP_ORDER: readonly FaceId[] = ['front', 'back']
 
+function FaceChips({ faceId }: { faceId: FaceId }) {
+  const copy = strings.cropStep
+  return (
+    <ul className="crop-faces" aria-label={copy.faceSelectorLabel}>
+      {CROP_ORDER.map((id) => (
+        <li key={id} className="crop-face-chip" data-current={id === faceId} aria-current={id === faceId ? 'step' : undefined}>
+          {strings.loadStep.faces[id]}
+          <span className="crop-face-state">{id === 'front' && faceId === 'back' ? copy.faceDone : copy.facePending}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function CropStep({ faceId }: { faceId: FaceId }) {
   const face = useSession((s) => s.faces[faceId])
   const [adjusting, setAdjusting] = useState(false)
@@ -27,10 +41,12 @@ export function CropStep({ faceId }: { faceId: FaceId }) {
   if (face.quadOrigin === 'auto' && !adjusting) {
     return (
       <div className="crop-step">
+        <FaceChips faceId={faceId} />
         <p className="crop-counter">{copy.faceCounter(strings.loadStep.faces[faceId], index, CROP_ORDER.length)}</p>
         {face.rendered && valid && (
           <BitmapCanvas bitmap={face.rendered} label={copy.resultLabel} className="crop-result" />
         )}
+        {face.rendered && valid && <p className="crop-detected">{copy.detected}</p>}
         {!face.rendered && <p role="status">{strings.loadStep.processing}</p>}
         {blurry}
         <div className="crop-actions">

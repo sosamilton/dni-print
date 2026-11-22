@@ -4,7 +4,7 @@ import { pngFile } from './fixtures.ts'
 
 const { steps, doneStep } = strings
 
-test('tras Borrar fotos no queda nada en el almacenamiento y la recarga arranca vacía', async ({ page }) => {
+test('tras Empezar de nuevo no queda nada en el almacenamiento y la recarga arranca vacía', async ({ page }) => {
   await page.goto('./')
   await page.getByTestId('front-gallery').setInputFiles(pngFile())
   await page.getByTestId('back-gallery').setInputFiles(pngFile())

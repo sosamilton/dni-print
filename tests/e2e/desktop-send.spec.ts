@@ -70,7 +70,7 @@ test('con Web Share no aparecen los botones de escritorio', async ({ page }) => 
   await expect(page.getByRole('button', { name: d.sendWhatsappWeb })).toHaveCount(0)
 })
 
-test('Borrar fotos vacía el correo', async ({ page }) => {
+test('Empezar de nuevo vacía el correo', async ({ page }) => {
   await page.goto('./')
   await toDone(page)
   await page.getByLabel(d.emailLabel).fill('a@b.com')

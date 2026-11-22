@@ -82,8 +82,6 @@
   --brand-mark-size: 32px;
   --brand-gap: 6px;
   --font-brand-size: 20px;
-  --face-thumb-width: 92px;
-  --face-thumb-height: 58px;
   --preview-max-width: 220px;
   --switch-width: 42px;
   --switch-height: 24px;
@@ -92,7 +90,16 @@
   --font-small-size: 13px;
   --font-form-size: 16px;
   --shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-button: 0 2px 0 rgba(0, 0, 0, 0.18), 0 4px 10px rgba(0, 0, 0, 0.12);
+  --thumb-ratio: 1.586;
+  --face-thumb-width: 112px;
+  --icon-size: 18px;
   --shadow-sheet: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
 @media (prefers-color-scheme: dark) {
