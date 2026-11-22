@@ -12,13 +12,17 @@ export function CameraDialog({ onClose }: CameraDialogProps) {
   const dialogRef = useRef(null as HTMLDialogElement | null)
   const videoRef = useRef(null as HTMLVideoElement | null)
   const streamRef = useRef(null as MediaStream | null)
-  const [error, setError] = useState(null as string | null)
+  // Without a secure context (plain http on a LAN address) the browser exposes no camera API at all.
+  const [error, setError] = useState((): string | null =>
+    typeof navigator.mediaDevices?.getUserMedia === 'function' ? null : window.isSecureContext ? strings.camera.unavailable : strings.camera.insecure,
+  )
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const dialog = dialogRef.current
     if (dialog && !dialog.open) dialog.showModal()
     let alive = true
+    if (typeof navigator.mediaDevices?.getUserMedia !== 'function') return
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
       .then((stream) => {

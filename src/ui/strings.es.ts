@@ -66,6 +66,7 @@ export const strings = {
     cancel: 'Cancelar',
     denied: 'No tenemos permiso para usar la cámara. Habilitala en el navegador o elegí una foto de la galería.',
     unavailable: 'No pudimos abrir la cámara. Elegí una foto de la galería.',
+    insecure: 'La cámara solo funciona en una conexión segura (https). Elegí una foto de la galería.',
   },
   cropStep: {
     faceCounter: (face: string, index: number, total: number) => `${face} · ${index} de ${total}`,

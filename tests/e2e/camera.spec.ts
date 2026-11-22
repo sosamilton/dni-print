@@ -18,3 +18,11 @@ test('en escritorio "Sacar foto" abre la cámara y carga la captura', async ({ p
   await expect(dialog).toBeHidden()
   await expect(page.getByText(strings.loadStep.loaded(strings.loadStep.faces.front))).toBeVisible()
 })
+
+test('en escritorio la cámara se ofrece aunque el navegador no liste dispositivos', async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.enumerateDevices = () => Promise.resolve([])
+  })
+  await page.goto('./')
+  await expect(page.getByRole('button', { name: strings.loadStep.takePhoto }).first()).toBeVisible()
+})

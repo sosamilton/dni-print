@@ -15,16 +15,20 @@ import './load-step.css'
 const FACE_IDS: FaceId[] = ['front', 'back']
 
 
-/** True when the browser lists at least one camera. */
+/**
+ * True unless the browser reports devices and none is a camera. An empty or failed list proves
+ * nothing (browsers hide devices until permission is granted), so the camera stays available and
+ * the camera dialog reports the real failure.
+ */
 function useHasCamera(): boolean {
-  const [has, setHas] = useState(false)
+  const [has, setHas] = useState(true)
   useEffect(() => {
     let alive = true
     const devices = navigator.mediaDevices
     if (!devices?.enumerateDevices) return
     devices
       .enumerateDevices()
-      .then((list) => alive && setHas(list.some((d) => d.kind === 'videoinput')))
+      .then((list) => alive && setHas(list.length === 0 || list.some((d) => d.kind === 'videoinput')))
       .catch(() => {})
     return () => {
       alive = false

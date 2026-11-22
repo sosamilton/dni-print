@@ -56,7 +56,7 @@ test('reemplazar una cara y conservar la foto ante un archivo no imagen', async 
 })
 
 test('sin cámara no aparece "Sacar foto"', async ({ page }) => {
-  await page.addInitScript(`navigator.mediaDevices.enumerateDevices = () => Promise.resolve([])`)
+  await page.addInitScript(`navigator.mediaDevices.enumerateDevices = () => Promise.resolve([{ kind: 'audioinput' }])`)
   await page.goto('./')
   await expect(page.getByText(loadStep.missing)).toHaveCount(2)
   await expect(page.getByRole('button', { name: loadStep.takePhoto })).toHaveCount(0)
