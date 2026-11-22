@@ -21,7 +21,8 @@
 .print-options > .print-notice { margin-bottom: var(--spacing-3); scroll-margin-bottom: calc(var(--button-min-height) + var(--spacing-7)); }
 .print-columns { display: flex; flex-direction: column; gap: var(--spacing-3); }
 .print-options { display: flex; flex-direction: column; gap: var(--spacing-3); min-width: 0; }
-.print-preview { display: flex; flex-direction: column; order: -1; min-width: 0; }
+.print-main { display: flex; flex-direction: column; gap: var(--spacing-3); min-width: 0; }
+.print-preview { display: flex; flex-direction: column; min-width: 0; }
 .ios-guide { padding: var(--spacing-3); border: var(--hairline) solid var(--color-border-hairline); border-radius: var(--rounded-md); }
 .ios-guide-title { margin: 0 0 var(--spacing-2); font-family: var(--font-label-family); font-size: var(--font-label-size); font-weight: var(--font-label-weight); }
 .ios-guide ol { margin: 0; padding-left: var(--spacing-4); }
@@ -31,5 +32,3 @@
 .whatsapp-hint { font-size: var(--font-small-size); }
 .desktop-send { display: grid; gap: var(--spacing-2); }
 .link-button { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; justify-self: start; font: inherit; }
-.send-section { display: grid; gap: var(--spacing-2); }
-.send-others summary { cursor: pointer; padding: var(--spacing-2) 0; font-size: var(--font-label-size); }

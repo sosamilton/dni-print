@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
 import { pngFile } from './fixtures.ts'
+import { card } from './output.ts'
 
-const { steps } = strings
+const { steps, output } = strings
 
 test.use({ viewport: { width: 1280, height: 800 } })
 
@@ -16,7 +17,10 @@ async function layoutOk(page: Page) {
   expect(m.width).toBeLessThanOrEqual(1120)
 }
 
-test('los cuatro pasos a 1280 px: sin scroll horizontal y «Descargar PDF» en la columna de opciones', async ({ page }) => {
+const disjoint = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+  a.x >= b.x + b.width || b.x >= a.x + a.width || a.y >= b.y + b.height || b.y >= a.y + a.height
+
+test('los tres pasos a 1280 px: sin scroll horizontal y, en el paso 3, el panel de salida a la derecha sin «Está bien»', async ({ page }) => {
   await page.goto('./')
   await layoutOk(page)
   await page.getByTestId('front-gallery').setInputFiles(pngFile())
@@ -33,21 +37,20 @@ test('los cuatro pasos a 1280 px: sin scroll horizontal y «Descargar PDF» en l
   await layoutOk(page)
   await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
   await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1, name: steps.print.title })).toBeVisible()
   await layoutOk(page)
-  const button = await page.getByRole('button', { name: steps.print.primary, exact: true }).boundingBox()
-  const preview = await page.locator('.sheet-preview').boundingBox()
-  const options = await page.locator('.print-options').boundingBox()
-  expect(button!.x).toBeGreaterThanOrEqual(options!.x - 1)
-  expect(button!.x + button!.width).toBeLessThanOrEqual(options!.x + options!.width + 1)
-  expect(button!.y).toBeGreaterThanOrEqual(options!.y - 1)
-  expect(button!.y + button!.height).toBeLessThanOrEqual(options!.y + options!.height + 1)
-  const disjoint =
-    button!.x >= preview!.x + preview!.width ||
-    preview!.x >= button!.x + button!.width ||
-    button!.y >= preview!.y + preview!.height ||
-    preview!.y >= button!.y + button!.height
-  expect(disjoint).toBe(true)
-  await page.getByRole('button', { name: steps.print.primary, exact: true }).click()
-  await expect(page.getByRole('heading', { level: 1, name: steps.done.title })).toBeVisible()
-  await layoutOk(page)
+
+  await expect(page.getByRole('button', { name: steps.print.primary, exact: true })).toHaveCount(0)
+  await expect(page.locator('.wizard-footer')).toHaveCount(0)
+  const panel = (await page.getByRole('region', { name: output.title }).boundingBox())!
+  const preview = (await page.locator('.sheet-preview').boundingBox())!
+  const options = (await page.locator('.print-options').boundingBox())!
+  expect(panel.x).toBeGreaterThanOrEqual(preview.x + preview.width - 1)
+  expect(panel.x).toBeGreaterThanOrEqual(options.x + options.width - 1)
+  expect(disjoint(panel, preview)).toBe(true)
+  // The whole sheet and the first options fit on screen without scrolling.
+  expect(preview.y + preview.height).toBeLessThanOrEqual(800)
+  const print = card(page, output.options.print.title)
+  await expect(print).toHaveAttribute('data-highlighted', 'true')
+  await expect(print).toBeInViewport()
 })

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
+import { savePdf } from './output.ts'
 
 const { cropStep, steps } = strings
 const card = () => ({ name: 'card.png', mimeType: 'image/png', buffer: readFileSync('tests/fixtures/synthetic-card.png') })
@@ -16,10 +17,7 @@ test('detección automática: Se ve bien en ambas caras y descarga sin tocar esq
   await ok.click()
   await expect(page.getByRole('button', { name: cropStep.adjust })).toBeVisible()
   await ok.click()
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: steps.print.primary, exact: true }).click(),
-  ])
+  const download = await savePdf(page)
   expect(download.suggestedFilename()).toMatch(/\.pdf$/)
 })
 

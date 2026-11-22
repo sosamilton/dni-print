@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type Ref } from 'react'
 import { updatePrompt } from './update-prompt.ts'
 import { AppMenu } from './app-menu.tsx'
 import { Brand } from './brand.tsx'
@@ -12,9 +12,13 @@ export interface WizardLayoutProps {
   title: string
   /** Shows the header's back button when present. */
   onBack?: () => void
-  primaryLabel: string
+  /** Footer button text; without it the footer is left out (step 3 from 900px). */
+  primaryLabel?: string
   onPrimary: () => void
   primaryDisabled?: boolean
+  primaryRef?: Ref<HTMLButtonElement>
+  /** True when the primary button opens a dialog («Está bien» opens the output sheet). */
+  primaryOpensDialog?: boolean
   onRestart?: () => void
   children: ReactNode
 }
@@ -28,6 +32,8 @@ export function WizardLayout({
   primaryLabel,
   onPrimary,
   primaryDisabled = false,
+  primaryRef,
+  primaryOpensDialog = false,
   onRestart,
   children,
 }: WizardLayoutProps) {
@@ -97,11 +103,20 @@ export function WizardLayout({
         </p>
       </header>
       <main className="wizard-body">{children}</main>
-      <footer className="wizard-footer">
-        <button type="button" className="button-primary" onClick={onPrimary} disabled={primaryDisabled}>
-          {primaryLabel}
-        </button>
-      </footer>
+      {primaryLabel !== undefined && (
+        <footer className="wizard-footer">
+          <button
+            ref={primaryRef}
+            type="button"
+            className="button-primary"
+            onClick={onPrimary}
+            disabled={primaryDisabled}
+            aria-haspopup={primaryOpensDialog ? 'dialog' : undefined}
+          >
+            {primaryLabel}
+          </button>
+        </footer>
+      )}
     </div>
   )
 }

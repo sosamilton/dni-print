@@ -96,6 +96,9 @@
   --face-thumb-width: 112px;
   --icon-size: 18px;
   --shadow-sheet: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --output-icon-size: 24px;
+  --sheet-grip-width: 40px;
+  --sheet-grip-height: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -140,15 +143,18 @@
   color-scheme: light;
 }
 
-/* Wide windows (>= 900px, UX-DR12): print step in two columns. Media queries cannot read var(), so the literals live here. */
+/*
+ * Wide windows (>= 900px, UX-DR12, story 9-3): step 3 has no footer; on the left the sheet preview and its
+ * settings side by side, on the right the output panel, always visible. Media queries cannot read var(), so the literals live here.
+ */
 @media (min-width: 900px) {
-  .print-step[data-layout='columns'] .print-columns { display: grid; grid-template-columns: 3fr 2fr; gap: var(--spacing-5); align-items: start; }
-  .print-step[data-layout='columns'] .print-options { order: 0; }
-  .print-step[data-layout='columns'] .print-preview { order: -1; }
-  .print-step[data-layout='columns'] .sheet-preview { max-width: 100%; }
+  .print-step[data-layout='columns'] .print-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--spacing-5); align-items: start; }
+  .print-step[data-layout='columns'] .print-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--spacing-5); align-items: start; }
+  .print-step[data-layout='columns'] .sheet-preview { max-width: 100%; max-height: 70vh; width: auto; }
+  .print-step[data-layout='columns'] .output-panel { position: sticky; top: var(--spacing-4); }
 }
 
-/* Desktop layout of the four steps (CAP-3). Literals (900px, 1120px) live here because media queries cannot read var(). */
+/* Desktop layout of the three steps (CAP-3). Literals (900px, 1120px) live here because media queries cannot read var(). */
 @media (min-width: 900px) {
   body .wizard { max-width: 1120px; }
   body .wizard-header { display: grid; grid-template-columns: auto minmax(200px, 360px) 1fr auto; column-gap: var(--spacing-4); align-items: center; }
@@ -171,22 +177,6 @@
   body .crop-step > * { grid-column: 1; }
   body .crop-step > .crop-result { grid-column: 2; grid-row: 1 / span 8; justify-self: start; }
   body .crop-step > .corner-editor, body .crop-step > [data-corner-editor] { grid-column: 1; }
-
-  body .done-step { display: grid; grid-template-columns: 1fr 1fr; align-items: start; column-gap: var(--spacing-5); row-gap: var(--spacing-3); }
-  body .done-step > * { grid-column: 2; }
-  body .done-step > .print-notice { grid-column: 1; }
-
-  /* Step 3: the primary button leaves the sticky footer and sits in the options column. */
-  body .wizard:has(.print-step[data-layout='columns']) { display: grid; grid-template-columns: 3fr 2fr; grid-template-rows: auto 1fr auto; column-gap: var(--spacing-5); }
-  body .wizard:has(.print-step[data-layout='columns']) .wizard-header { grid-column: 1 / -1; grid-row: 1; }
-  body .wizard:has(.print-step[data-layout='columns']) .wizard-body,
-  body .wizard:has(.print-step[data-layout='columns']) .print-step,
-  body .wizard:has(.print-step[data-layout='columns']) .print-columns { display: contents; }
-  body .wizard:has(.print-step[data-layout='columns']) .print-preview { grid-column: 1; grid-row: 2 / span 2; align-self: start; margin: var(--spacing-4) 0; }
-  body .wizard:has(.print-step[data-layout='columns']) .print-options { grid-column: 2; grid-row: 2 / span 2; margin: var(--spacing-4) 0; padding-bottom: calc(var(--button-min-height) + var(--spacing-5)); }
-  body .wizard:has(.print-step[data-layout='columns']) .wizard-footer { grid-column: 2; grid-row: 3; position: static; align-self: end; z-index: 1; padding: 0 0 var(--spacing-4); background: transparent; }
-  body .wizard:has(.print-step[data-layout='columns']) .wizard-footer .button-primary { max-width: none; margin-left: 0; }
-  body .wizard:has(.print-step[data-layout='columns']) .sheet-preview { max-height: 70vh; width: auto; max-width: 100%; }
 }
 
 /* Header bar (story 9-2): between 900px and 999px the bar keeps its labels and drops the decorative icons so it fits without horizontal scroll. */

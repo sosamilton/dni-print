@@ -25,7 +25,7 @@ async function clickPrimary(page: Page, label: string) {
   await page.getByRole('button', { name: label, exact: true }).click()
 }
 
-/** Visits every screen: the 4 steps, "Atrás", the ⋮ menu and the privacy dialog. */
+/** Visits every screen: the 3 steps and the output panel, "Atrás", the ⋮ menu and the privacy dialog. */
 async function walkThroughApp(page: Page) {
   const { steps, wizard, menu, privacyDialog } = strings
 
@@ -43,10 +43,12 @@ async function walkThroughApp(page: Page) {
   await clickPrimary(page, steps.crop.primary)
   await clickPrimary(page, steps.crop.primary)
   await expectTitle(page, steps.print.title)
-  await clickPrimary(page, steps.print.primary)
-  await expectTitle(page, steps.done.title)
-
-  await page.getByLabel(strings.doneStep.whatsapp.label).fill('11 2345 6789')
+  // Wide window: the output panel is already visible; saving is the only action that downloads.
+  await page.getByLabel(strings.output.whatsapp.label).fill('11 2345 6789')
+  const save = page.getByRole('button', { name: strings.output.options.save.title.pdf, exact: true })
+  await expect(save).toBeEnabled()
+  await Promise.all([page.waitForEvent('download'), save.click()])
+  await expect(page.getByText(strings.output.after.saved)).toBeVisible()
 
   // Desktop bar: "Código fuente" in ⋯ is only checked, never followed (it leaves the origin); then the privacy dialog.
   await page.getByRole('button', { name: menu.buttonLabel }).click()
@@ -58,7 +60,7 @@ async function walkThroughApp(page: Page) {
   await dialog.getByRole('button', { name: menu.close, exact: true }).click()
   await expect(dialog).toBeHidden()
 
-  await clickPrimary(page, steps.done.primary)
+  await clickPrimary(page, strings.output.restart)
   await expectTitle(page, steps.load.title)
 
   await page.waitForLoadState('networkidle')

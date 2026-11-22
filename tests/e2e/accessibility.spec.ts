@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
 import { pngFile } from './fixtures.ts'
+import { card } from './output.ts'
 
-const { steps, cropStep, printStep, doneStep, loadStep, wizard, menu } = strings
+const { steps, cropStep, printStep, output, loadStep, wizard, menu } = strings
 
 async function loadFaces(page: Page) {
   await page.goto('./')
@@ -40,11 +41,18 @@ test('flujo completo solo con teclado, esquinas incluidas, con foco y anuncio po
   await page.keyboard.press('Space')
   await expect(page.getByRole('button', { name: printStep.copies[1] })).toHaveAttribute('aria-pressed', 'true')
 
-  await primary(page, steps.print.primary).focus()
+  // Wide window: the output panel is beside the sheet; «Guardar PDF» by keyboard.
+  const save = card(page, output.options.save.title.pdf)
+  await expect(save).toBeEnabled()
+  await save.focus()
   const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')])
   expect(readFileSync((await download.path())!).toString('latin1')).toContain('%PDF')
-  await expect(page.getByRole('heading', { level: 1, name: steps.done.title })).toBeFocused()
-  await expect(page.getByRole('heading', { name: doneStep.iosGuideTitle })).toHaveCount(0)
+  await expect(page.getByText(output.after.saved)).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: output.another, exact: true })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(card(page, output.options.print.title)).toBeFocused()
+  await expect(page.getByRole('heading', { name: output.iosGuideTitle })).toHaveCount(0)
 })
 
 test('a 320 px no hay scroll horizontal en ningún paso', async ({ page }) => {
@@ -228,7 +236,7 @@ for (const width of [900, 1000]) {
   })
 }
 
-test('desde 900 px el paso 3 va en dos columnas; antes, en una', async ({ page }) => {
+test('desde 900 px el paso 3 muestra hoja y ajustes a la izquierda y el panel a la derecha; antes, una columna con «Está bien»', async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 800 })
   await loadFaces(page)
   await primary(page, steps.load.primary).click()
@@ -236,11 +244,31 @@ test('desde 900 px el paso 3 va en dos columnas; antes, en una', async ({ page }
   await primary(page, steps.crop.primary).click()
   const preview = (await page.locator('.print-preview').boundingBox())!
   const options = (await page.locator('.print-options').boundingBox())!
+  const panel = (await page.locator('.output-panel').boundingBox())!
   expect(preview.x).toBeLessThan(options.x)
+  expect(options.x).toBeLessThan(panel.x)
+  await expect(primary(page, steps.print.primary)).toHaveCount(0)
   await page.setViewportSize({ width: 600, height: 800 })
   const narrow = (await page.locator('.print-options').boundingBox())!
   const narrowPreview = (await page.locator('.print-preview').boundingBox())!
   expect(narrowPreview.y).toBeLessThan(narrow.y)
+  await expect(page.locator('.output-panel')).toHaveCount(0)
+  await expect(primary(page, steps.print.primary)).toBeVisible()
+})
+
+test('con la hoja de salida abierta, pasar a 900 px la cierra y muestra el panel', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 800 })
+  await loadFaces(page)
+  await primary(page, steps.load.primary).click()
+  await primary(page, steps.crop.primary).click()
+  await primary(page, steps.crop.primary).click()
+  await primary(page, steps.print.primary).click()
+  await expect(page.getByRole('dialog', { name: output.title })).toBeVisible()
+  await page.setViewportSize({ width: 1000, height: 800 })
+  await expect(page.locator('dialog.output-sheet')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: output.title })).toBeVisible()
+  await page.getByRole('button', { name: printStep.copies[1] }).click()
+  await expect(page.getByRole('button', { name: printStep.copies[1] })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('escritorio dice "tu dispositivo" y no muestra la guía de iOS', async ({ page }) => {
@@ -254,13 +282,17 @@ test.describe('iOS', () => {
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   })
 
-  test('Listo incluye la guía y el aviso dice "teléfono"', async ({ page }) => {
+  test('la guía queda junto a Guardar en el teléfono y el aviso dice "teléfono"', async ({ page }) => {
     await loadFaces(page)
     await expect(page.getByText(loadStep.privacyNotice(false))).toBeVisible()
     await primary(page, steps.load.primary).click()
     await primary(page, steps.crop.primary).click()
     await primary(page, steps.crop.primary).click()
-    await Promise.all([page.waitForEvent('download'), primary(page, steps.print.primary).click()])
-    await expect(page.getByRole('heading', { name: doneStep.iosGuideTitle })).toBeVisible()
+    const guide = page.getByRole('heading', { name: output.iosGuideTitle })
+    await expect(guide).toBeVisible()
+    const save = (await card(page, output.options.save.title.phone).boundingBox())!
+    const guideBox = (await guide.boundingBox())!
+    expect(guideBox.y).toBeGreaterThan(save.y)
+    expect(guideBox.y).toBeLessThan((await page.locator('details.output-send').boundingBox())!.y)
   })
 })

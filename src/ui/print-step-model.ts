@@ -1,6 +1,6 @@
 // Single source of the sheet layout: the preview and `buildPdf` both use this (AD-5).
-import { getProfile, layout, MIN_MARGIN_MM, uniformMargins } from '../core/index.ts'
-import type { FaceFilter, LayoutResult } from '../core/index.ts'
+import { getProfile, layout, MIN_MARGIN_MM, normalizeWatermark, uniformMargins } from '../core/index.ts'
+import type { FaceFilter, LayoutResult, Quad, Rotation } from '../core/index.ts'
 import { strings } from './strings.es.ts'
 
 export const DEFAULT_MARGIN_MM = 10
@@ -31,4 +31,32 @@ export function previewDescription(copies: 1 | 2, filter: FaceFilter, watermark:
   return [copy.previewBase(copies), copy.previewFilters[filter], watermark ? copy.previewWatermark : null]
     .filter(Boolean)
     .join(', ')
+}
+
+/** The session fields the PDF is built from (see `pipeline.buildPdf`). */
+export interface PdfInputs {
+  copies: 1 | 2
+  profileId: string
+  filter: FaceFilter
+  watermarkOn: boolean
+  watermarkText: string
+  marginMm: number
+  faces: Partial<Record<'front' | 'back', { quad: Quad; rotation: Rotation } | undefined>>
+}
+
+/**
+ * Identity of the PDF these inputs produce: it changes with copies, profile, filter, the normalized
+ * watermark, margins or a face's quad/rotation, and ignores renders and revisions.
+ */
+export function pdfInputsKey(state: PdfInputs): string {
+  const face = (f: { quad: Quad; rotation: Rotation } | undefined) => (f ? [f.quad, f.rotation] : null)
+  return JSON.stringify([
+    state.copies,
+    state.profileId,
+    state.filter,
+    normalizeWatermark(state.watermarkOn, state.watermarkText),
+    state.marginMm,
+    face(state.faces.front),
+    face(state.faces.back),
+  ])
 }

@@ -1,0 +1,216 @@
+/* Output of step 3 «Revisá la hoja» (story 9-3): option cards, the notice after acting and the bottom sheet. */
+.output-title {
+  margin: 0 0 var(--spacing-3);
+  font-family: var(--font-label-family);
+  font-size: var(--font-body-size);
+  font-weight: var(--font-label-weight);
+  line-height: var(--font-label-line-height);
+}
+
+.output-options,
+.output-after {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.output-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.output-status {
+  margin: 0;
+  color: var(--color-ink-secondary);
+  font-size: var(--font-label-size);
+}
+
+.output-failed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* One card per option: decorative icon, title and a help line. */
+.output-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--spacing-3);
+  border: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+  font-family: var(--font-body-family);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+summary.output-card {
+  list-style: none;
+}
+
+summary.output-card::-webkit-details-marker {
+  display: none;
+}
+
+.output-card:hover:not([aria-disabled='true']) {
+  border-color: var(--color-accent);
+}
+
+/* The highlighted option looks like the primary button. */
+.output-card[data-highlighted='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-surface-raised);
+  box-shadow: var(--shadow-button);
+}
+
+.output-card[aria-disabled='true'] {
+  border-color: var(--color-border-hairline);
+  background: var(--color-placeholder);
+  color: var(--color-ink-secondary);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.output-card:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ink-primary);
+  outline-offset: calc(var(--hairline) * 2);
+}
+
+.output-card-icon {
+  flex: none;
+  width: var(--output-icon-size);
+  height: var(--output-icon-size);
+}
+
+.output-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.output-card-title {
+  font-family: var(--font-button-family);
+  font-size: var(--font-button-size);
+  font-weight: var(--font-button-weight);
+  line-height: var(--font-button-line-height);
+}
+
+.output-card-help {
+  font-size: var(--font-label-size);
+  line-height: var(--font-label-line-height);
+}
+
+.output-send[open] > .desktop-send {
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-2);
+}
+
+.output-after-text {
+  margin: 0;
+  font-family: var(--font-label-family);
+  font-size: var(--font-body-size);
+  font-weight: var(--font-label-weight);
+}
+
+.output-after-text:focus {
+  outline: none;
+}
+
+.output-secondary {
+  display: block;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: var(--button-padding);
+  border: 0;
+  border-radius: var(--rounded-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-family: var(--font-button-family);
+  font-size: var(--font-button-size);
+  font-weight: var(--font-button-weight);
+  line-height: var(--font-button-line-height);
+  cursor: pointer;
+}
+
+.output-link {
+  min-height: var(--hit-area);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-label-family);
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  cursor: pointer;
+}
+
+.output-secondary:focus-visible,
+.output-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ink-primary);
+  outline-offset: calc(var(--hairline) * 2);
+}
+
+/* Bottom sheet (< 900px): same look as the menu sheet, with a drag handle on top. */
+.output-sheet {
+  box-sizing: border-box;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: 85vh;
+  max-height: 85dvh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-top: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-xl) var(--rounded-xl) 0 0;
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+  font-family: var(--font-body-family);
+  overflow-wrap: anywhere;
+}
+
+.output-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-3) 0 var(--spacing-2);
+  touch-action: none;
+  cursor: grab;
+}
+
+.output-sheet-grip {
+  width: var(--sheet-grip-width);
+  height: var(--sheet-grip-height);
+  border-radius: var(--rounded-full);
+  background: var(--color-border-hairline);
+}
+
+.output-sheet-body {
+  max-width: var(--column-max);
+  margin: 0 auto;
+  padding: 0 var(--spacing-4) calc(var(--spacing-5) + env(safe-area-inset-bottom));
+}
+
+.output-sheet::backdrop {
+  background: color-mix(in srgb, var(--color-ink-primary) 40%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .output-sheet::backdrop {
+    background: color-mix(in srgb, var(--color-surface-base) 75%, transparent);
+  }
+}
+
+:root[data-theme='dark'] .output-sheet::backdrop {
+  background: color-mix(in srgb, var(--color-surface-base) 75%, transparent);
+}

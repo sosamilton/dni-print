@@ -140,6 +140,15 @@ describe('session store pdf bytes', () => {
     s.getState().clearSession()
     expect(s.getState().pdf).toBeNull()
   })
+
+  it('clearPdf drops the PDF and keeps the rest of the session', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    s.getState().setCopies(1)
+    s.getState().setPdf(new Uint8Array([1]), 1)
+    s.getState().clearPdf()
+    expect(s.getState().pdf).toBeNull()
+    expect(s.getState().copies).toBe(1)
+  })
 })
 
 describe('session store whatsapp number', () => {

@@ -42,7 +42,7 @@ describe('normalizeArPhone', () => {
 
 describe('whatsappUrl', () => {
   it('builds the wa.me link with the encoded message', () => {
-    expect(whatsappUrl('5491123456789', strings.doneStep.whatsapp.message)).toBe(
+    expect(whatsappUrl('5491123456789', strings.output.whatsapp.message)).toBe(
       'https://wa.me/5491123456789?text=Hola%2C%20te%20paso%20un%20documento%20para%20imprimir%20a%20tama%C3%B1o%20real.',
     )
     expect(whatsappUrl('5491123456789', 'a&b=c?')).toBe('https://wa.me/5491123456789?text=a%26b%3Dc%3F')

@@ -39,9 +39,9 @@ export interface SessionState {
   marginMm: number
   /** Last built PDF, kept in memory only (for sharing) until clearSession. */
   pdf: { bytes: Uint8Array; copies: 1 | 2 } | null
-  /** WhatsApp number as typed on the done step; memory only, cleared by clearSession. */
+  /** WhatsApp number as typed in the output panel; memory only, cleared by clearSession. */
   whatsappNumber: string
-  /** Optional recipient email typed on the done step; memory only, cleared by clearSession. */
+  /** Optional recipient email typed in the output panel; memory only, cleared by clearSession. */
   recipientEmail: string
 }
 
@@ -75,6 +75,8 @@ export interface SessionActions {
   releaseUrl(url: string): void
   /** Keeps the built PDF's bytes in memory (never in storage) until clearSession. */
   setPdf(bytes: Uint8Array, copies: 1 | 2): void
+  /** Drops the built PDF (its inputs changed); the next one is built from the current state. */
+  clearPdf(): void
   /** Stores the WhatsApp number as typed (memory only). */
   setWhatsappNumber(text: string): void
   /** Stores the recipient email as typed (memory only). */
@@ -253,6 +255,10 @@ export function createSessionStore(deps: SessionDeps) {
 
       setPdf(bytes, copies) {
         set({ pdf: { bytes, copies } })
+      },
+
+      clearPdf() {
+        set({ pdf: null })
       },
 
       setWhatsappNumber(text) {

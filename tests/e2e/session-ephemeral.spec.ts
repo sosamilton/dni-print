@@ -1,22 +1,18 @@
 import { expect, test, type Page } from '@playwright/test'
 import { PREFS_KEY } from '../../src/ui/preferences.ts'
 import { strings } from '../../src/ui/strings.es.ts'
-import { pngFile } from './fixtures.ts'
+import { openSheet, savePdf, toPrint } from './output.ts'
 
-const { steps, doneStep, menu } = strings
+const { steps, output, menu } = strings
 
+/** Builds the PDF, saves it (the only action that downloads) and restarts from the notice. */
 async function completeAndRestart(page: Page) {
-  await page.getByTestId('front-gallery').setInputFiles(pngFile())
-  await page.getByTestId('back-gallery').setInputFiles(pngFile())
-  await page.getByRole('button', { name: steps.load.primary, exact: true }).click()
-  await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
-  await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
-  await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: steps.print.primary, exact: true }).click(),
-  ])
-  await page.getByRole('button', { name: steps.done.primary, exact: true }).click()
-  await expect(page.getByText(doneStep.cleared)).toBeVisible()
+  await toPrint(page)
+  const narrow = (page.viewportSize()?.width ?? 1280) < 900
+  if (narrow) await openSheet(page)
+  await savePdf(page)
+  await page.getByRole('button', { name: output.restart, exact: true }).click()
+  await expect(page.getByText(output.cleared)).toBeVisible()
 }
 
 const inspect = (page: Page) =>

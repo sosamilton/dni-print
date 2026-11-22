@@ -1,13 +1,13 @@
 import { test as base, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
-import { pngFile } from './fixtures.ts'
+import { card, savePdf, toPrint } from './output.ts'
 import { installNetworkGuard, type NetworkGuard } from './network-guard.ts'
 
-const { steps, doneStep } = strings
-const d = doneStep.desktop
-const wa = doneStep.whatsapp
-const send = doneStep.send
+const { output } = strings
+const d = output.desktop
+const wa = output.whatsapp
+const send = output.send
 
 const test = base.extend<{ guard: NetworkGuard }>({
   guard: async ({ context, baseURL }, provide) => {
@@ -23,22 +23,12 @@ async function fakeShare(page: Page) {
   })
 }
 
-async function toDone(page: Page) {
-  await page.getByTestId('front-gallery').setInputFiles(pngFile())
-  await page.getByTestId('back-gallery').setInputFiles(pngFile())
-  await page.getByRole('button', { name: steps.load.primary, exact: true }).click()
-  await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
-  await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
-  await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: steps.print.primary, exact: true }).click(),
-  ])
-  await expect(page.getByRole('heading', { level: 1, name: steps.done.title })).toBeVisible()
-}
 
-test('sin Web Share aparecen los botones y abren Gmail y WhatsApp Web', async ({ page, guard }) => {
+test('sin Web Share Mandar arranca abierta, sus botones abren Gmail y WhatsApp Web y nada se descarga', async ({ page, guard }) => {
+  let downloads = 0
+  page.on('download', () => downloads++)
   await page.goto('./')
-  await toDone(page)
+  await toPrint(page)
   await expect(page.getByRole('button', { name: d.sendMail })).toBeVisible()
   await expect(page.getByRole('button', { name: send.whatsappButton })).toBeVisible()
   await expect(page.getByText(d.dragHint)).toBeVisible()
@@ -62,23 +52,27 @@ test('sin Web Share aparecen los botones y abren Gmail y WhatsApp Web', async ({
   const requests = guard.externalRequests()
   expect(requests.some((u) => u.startsWith('https://mail.google.com/mail/?view=cm&fs=1&to=imprenta%40ejemplo.com'))).toBe(true)
   expect(requests).toContain(`https://web.whatsapp.com/send?phone=5491123456789&text=${encodeURIComponent(wa.message)}`)
+  expect(downloads).toBe(0)
 })
 
-test('con Web Share «Compartir PDF» es lo principal y Otras formas queda cerrado', async ({ page }) => {
+test('con Web Share en escritorio aparece Compartir, Imprimir sigue resaltada y Mandar queda cerrada', async ({ page }) => {
   await fakeShare(page)
   await page.goto('./')
-  await toDone(page)
-  await expect(page.getByRole('button', { name: doneStep.share })).toBeVisible()
+  await toPrint(page)
+  await expect(card(page, output.options.share.title)).toBeVisible()
+  await expect(card(page, output.options.share.title)).toHaveAttribute('data-highlighted', 'false')
+  await expect(card(page, output.options.print.title)).toHaveAttribute('data-highlighted', 'true')
   await expect(page.getByRole('button', { name: d.sendMail })).toBeHidden()
-  await page.getByText(send.others).click()
+  await page.getByText(output.options.send.title).click()
   await expect(page.getByRole('button', { name: d.sendMail })).toBeVisible()
 })
 
 test('Empezar de nuevo vacía el correo', async ({ page }) => {
   await page.goto('./')
-  await toDone(page)
+  await toPrint(page)
   await page.getByLabel(d.emailLabel).fill('a@b.com')
-  await page.getByRole('button', { name: steps.done.primary, exact: true }).click()
-  await toDone(page)
+  await savePdf(page)
+  await page.getByRole('button', { name: output.restart, exact: true }).click()
+  await toPrint(page)
   await expect(page.getByLabel(d.emailLabel)).toHaveValue('')
 })

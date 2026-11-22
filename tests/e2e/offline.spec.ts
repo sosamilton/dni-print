@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
+import { savePdf } from './output.ts'
 import { pngFile } from './fixtures.ts'
 
 const { steps } = strings
@@ -21,10 +22,7 @@ test('con el service worker activo, cargar, esquinas y PDF funcionan sin conexi√
   await page.getByRole('button', { name: steps.load.primary, exact: true }).click()
   await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
   await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: steps.print.primary, exact: true }).click(),
-  ])
+  await expect(page.getByRole('heading', { level: 1, name: steps.print.title })).toBeVisible()
+  const download = await savePdf(page)
   expect(download.suggestedFilename()).toMatch(/\.pdf$/)
-  await expect(page.getByRole('heading', { level: 1, name: steps.done.title })).toBeVisible()
 })

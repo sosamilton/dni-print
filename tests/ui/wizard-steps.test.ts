@@ -7,6 +7,7 @@ import {
   primaryAction,
   stepIndex,
   stepNumber,
+  STEP_COUNT,
   STEP_ORDER,
 } from '../../src/ui/wizard-steps.ts'
 
@@ -41,19 +42,20 @@ function createFakeHistory(initialState: unknown = null) {
 }
 
 describe('wizard steps', () => {
-  it('orders load → crop → print → done', () => {
-    expect(STEP_ORDER).toEqual(['load', 'crop', 'print', 'done'])
-    expect(STEP_ORDER.map(stepIndex)).toEqual([0, 1, 2, 3])
-    expect(STEP_ORDER.map(nextStep)).toEqual(['crop', 'print', 'done', null])
-    expect(STEP_ORDER.map(previousStep)).toEqual([null, 'load', 'crop', 'print'])
+  it('orders load → crop → print, three steps', () => {
+    expect(STEP_ORDER).toEqual(['load', 'crop', 'print'])
+    expect(STEP_COUNT).toBe(3)
+    expect(STEP_ORDER.map(stepIndex)).toEqual([0, 1, 2])
+    expect(STEP_ORDER.map(nextStep)).toEqual(['crop', 'print', null])
+    expect(STEP_ORDER.map(previousStep)).toEqual([null, 'load', 'crop'])
   })
 
-  it('numbers steps 1–3 and shows done as step 3', () => {
-    expect(STEP_ORDER.map(stepNumber)).toEqual([1, 2, 3, 3])
+  it('numbers steps 1–3', () => {
+    expect(STEP_ORDER.map(stepNumber)).toEqual([1, 2, 3])
   })
 
-  it('advances on every step but done, which restarts', () => {
-    expect(STEP_ORDER.map(primaryAction)).toEqual(['forward', 'forward', 'forward', 'restart'])
+  it('advances on load and crop; on print «Está bien» opens the output options', () => {
+    expect(STEP_ORDER.map(primaryAction)).toEqual(['forward', 'forward', 'output'])
   })
 
   it('parses valid history states', () => {
@@ -61,7 +63,7 @@ describe('wizard steps', () => {
   })
 
   it('reads invalid history states as load without throwing', () => {
-    for (const state of [null, undefined, 42, 'crop', {}, { step: 'nope' }, { step: 3 }, []]) {
+    for (const state of [null, undefined, 42, 'crop', {}, { step: 'nope' }, { step: 3 }, { step: 'done' }, []]) {
       expect(parseHistoryState(state)).toBe('load')
     }
   })
@@ -76,7 +78,7 @@ describe('step history', () => {
     expect(fake.history.state).toEqual({ step: 'load' })
   })
 
-  it('pushes the next step on forward, through done', () => {
+  it('pushes the next step on forward, up to print', () => {
     const fake = createFakeHistory()
     const nav = createStepHistory(fake.history)
     let step = nav.start()
@@ -84,35 +86,26 @@ describe('step history', () => {
     expect(step).toBe('crop')
     step = nav.forward(step)
     expect(step).toBe('print')
-    step = nav.forward(step)
-    expect(step).toBe('done')
-    expect(fake.entries).toEqual([
-      { step: 'load' },
-      { step: 'crop' },
-      { step: 'print' },
-      { step: 'done' },
-    ])
-    expect(nav.forward('done')).toBe('done')
-    expect(fake.entries).toHaveLength(4)
+    expect(fake.entries).toEqual([{ step: 'load' }, { step: 'crop' }, { step: 'print' }])
+    expect(nav.forward('print')).toBe('print')
+    expect(fake.entries).toHaveLength(3)
   })
 
   it('goes back one step via popstate', () => {
     const fake = createFakeHistory()
     const nav = createStepHistory(fake.history)
-    nav.forward(nav.forward(nav.forward(nav.start())))
-    nav.back()
-    expect(nav.fromPopState(fake.popped.at(-1))).toBe('print')
+    nav.forward(nav.forward(nav.start()))
     nav.back()
     expect(nav.fromPopState(fake.popped.at(-1))).toBe('crop')
     nav.back()
     expect(nav.fromPopState(fake.popped.at(-1))).toBe('load')
   })
 
-  it('restarts from done by rewinding the history to load', () => {
+  it('restarts from print by rewinding the history to load', () => {
     const fake = createFakeHistory()
     const nav = createStepHistory(fake.history)
-    const done = nav.forward(nav.forward(nav.forward(nav.start())))
-    nav.restart(done)
+    const print = nav.forward(nav.forward(nav.start()))
+    nav.restart(print)
     expect(fake.getIndex()).toBe(0)
     expect(nav.fromPopState(fake.popped.at(-1))).toBe('load')
   })

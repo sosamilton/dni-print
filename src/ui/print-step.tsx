@@ -1,6 +1,7 @@
 import { pipeline } from './pipeline.ts'
 import { FACE_FILTERS, MAX_WATERMARK_CHARS, normalizeWatermark } from '../core/index.ts'
 import { maxMarginMm, MIN_MARGIN_MM, previewDescription, sheetLayout } from './print-step-model.ts'
+import { OutputPanel, type OutputPanelProps } from './output-panel.tsx'
 import { SheetPreview } from './sheet-preview.tsx'
 import { sessionStore, useSession } from './session-store.ts'
 import { strings } from './strings.es.ts'
@@ -8,7 +9,8 @@ import './print-step.css'
 
 const OPTIONS = [1, 2] as const
 
-export function PrintStep({ error = false }: { error?: boolean }) {
+/** Step 3 «Revisá la hoja»: preview and settings, plus the output panel (or bottom sheet below 900px). */
+export function PrintStep({ output }: { output: OutputPanelProps }) {
   const copies = useSession((s) => s.copies)
   const profileId = useSession((s) => s.profileId)
   const filter = useSession((s) => s.filter)
@@ -22,6 +24,22 @@ export function PrintStep({ error = false }: { error?: boolean }) {
   return (
     <div className="print-step" data-layout="columns">
       <div className="print-columns">
+      <div className="print-main">
+      <div className="print-preview">
+      {!sheet.ok && (
+        <p className="print-error" role="alert">
+          {copy.noFit(copies)}
+        </p>
+      )}
+      {sheet.ok && (
+        <SheetPreview
+          sheet={sheet}
+          marginMm={marginMm}
+          label={previewDescription(copies, filter, normalizeWatermark(watermarkOn, watermarkText) !== null)}
+          rendered={{ front: faces.front?.rendered ?? null, back: faces.back?.rendered ?? null }}
+        />
+      )}
+      </div>
       <div className="print-options">
       <div className="seg" role="group" aria-label={copy.copiesLabel}>
         {OPTIONS.map((n) => (
@@ -88,27 +106,9 @@ export function PrintStep({ error = false }: { error?: boolean }) {
         </label>
       </details>
       <p className="print-notice hint">{copy.notice}</p>
-      {error && (
-        <p className="print-error" role="alert">
-          {copy.failed}
-        </p>
-      )}
       </div>
-      <div className="print-preview">
-      {!sheet.ok && (
-        <p className="print-error" role="alert">
-          {copy.noFit(copies)}
-        </p>
-      )}
-      {sheet.ok && (
-        <SheetPreview
-          sheet={sheet}
-          marginMm={marginMm}
-          label={previewDescription(copies, filter, normalizeWatermark(watermarkOn, watermarkText) !== null)}
-          rendered={{ front: faces.front?.rendered ?? null, back: faces.back?.rendered ?? null }}
-        />
-      )}
       </div>
+      <OutputPanel {...output} />
       </div>
     </div>
   )
