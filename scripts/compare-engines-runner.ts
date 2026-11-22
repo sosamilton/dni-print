@@ -78,3 +78,54 @@ export async function runComparison(root: string, log: (m: string) => void = () 
     await server.close()
   }
 }
+
+export interface OrientationRow {
+  file: string
+  expected: number
+  rotation: number | null
+  decidedBy: 'axis' | 'content' | null
+  ms: number | null
+}
+
+/** Runs the production orientation rule over the annotated corpus (`corpus/orientation.json` + `.quad.json`). Null without them. */
+export async function runOrientationCorpus(root: string): Promise<OrientationRow[] | null> {
+  const dir = join(root, 'corpus')
+  const annotations = join(dir, 'orientation.json')
+  if (!existsSync(annotations)) return null
+  const truth = JSON.parse(readFileSync(annotations, 'utf8')) as Record<string, { rotation: number }>
+  const files = listImages(dir).filter((f) => {
+    const name = f.slice(dir.length + 1)
+    return name in truth && existsSync(f.replace(/\.[^.]+$/, '.quad.json'))
+  })
+  if (files.length === 0) return null
+
+  const server = await createServer({ root, logLevel: 'error', server: { port: 0, host: '127.0.0.1' } })
+  let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined
+  try {
+    browser = await chromium.launch()
+    await server.listen()
+    const url = server.resolvedUrls?.local[0]
+    if (!url) throw new Error('Vite no devolvió una URL local')
+    const page = await browser.newPage()
+    await page.goto(new URL('scripts/compare-engines/index.html', url).href)
+    await page.waitForFunction('typeof runOrientation === "function"')
+    const payload = files.flatMap((f) => {
+      const quad = parseQuadJson(readFileSync(f.replace(/\.[^.]+$/, '.quad.json'), 'utf8'))
+      return quad ? [{ base64: readFileSync(f).toString('base64'), mime: MIME[extname(f).toLowerCase()], quad }] : []
+    })
+    const raw = await page.evaluate(
+      (imgs) => (globalThis as unknown as { runOrientation: (i: typeof imgs) => Promise<({ rotation: number; decidedBy: 'axis' | 'content'; ms: number } | null)[]> }).runOrientation(imgs),
+      payload,
+    )
+    return files.map((f, i) => ({
+      file: f.slice(dir.length + 1),
+      expected: truth[f.slice(dir.length + 1)]!.rotation,
+      rotation: raw[i]?.rotation ?? null,
+      decidedBy: raw[i]?.decidedBy ?? null,
+      ms: raw[i]?.ms ?? null,
+    }))
+  } finally {
+    await browser?.close()
+    await server.close()
+  }
+}

@@ -39,6 +39,37 @@ async function ingestWith(detect: () => Promise<unknown>) {
 }
 
 describe('pipeline controller', () => {
+  it('stores the rotation computed by the worker as the initial rotation of the face', async () => {
+    const f = await ingestWith(async () => ({ ok: true, quad: GOOD, rotation: 180 }))
+    expect(f).toMatchObject({ rotation: 180, detectedRotation: 180, quadOrigin: 'auto' })
+  })
+
+  it('setQuad recomputes the rotation unless the user already tapped Rotar', async () => {
+    const t = setup(async () => ({ ok: true, quad: GOOD, rotation: 0 }))
+    const orient: unknown[] = []
+    const api = {
+      async ingest() { return { ok: true, sourceSize: { widthPx: 800, heightPx: 600 }, previewBitmap: fakeBitmap(10, 10) } },
+      async render(_f: FaceId, _q: unknown, rotation: number, _p: string, rev: number) {
+        return { ok: true, rev, face: fakeBitmap(1, 1), sharpness: null, rotation }
+      },
+      async detect() { return { ok: true, quad: GOOD, rotation: 0 } },
+      async orient(...args: unknown[]) { orient.push(args); return { ok: true, rotation: 90 } },
+      async clear() {},
+    } as unknown as ProcessingApi
+    const store = createSessionStore({ revokeUrl: () => {} })
+    const c = createPipelineController({ api: { get: () => api, peek: () => api }, store })
+    void t
+    await c.ingest('front', new Blob(['x'], { type: 'image/png' }))
+    await c.setQuad('front', GOOD)
+    expect(store.getState().faces.front).toMatchObject({ rotation: 90, quadOrigin: 'manual' })
+    await c.setRotation('front', 270)
+    await c.setQuad('front', GOOD)
+    expect(orient).toHaveLength(1)
+    expect(store.getState().faces.front!.rotation).toBe(270)
+    await c.resetQuad('front')
+    expect(store.getState().faces.front).toMatchObject({ rotation: 0, quadOrigin: 'auto' })
+  })
+
   it('passes the render sharpness to the store', async () => {
     const t = setup(async () => ({ ok: true, quad: GOOD }))
     const p = t.controller.ingest('front', new Blob(['x'], { type: 'image/png' }))

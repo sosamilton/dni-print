@@ -22,6 +22,8 @@ export interface PipelineControllerDeps {
 export function createPipelineController({ api, store = sessionStore }: PipelineControllerDeps) {
   // Bumped on every ingest and on clearSession, so late ingest answers are dropped.
   const ingestToken: Record<FaceId, number> = { front: 0, back: 0 }
+  // Bumped on every manual quad, so a slow orientation answer never overwrites a newer quad.
+  const quadToken: Record<FaceId, number> = { front: 0, back: 0 }
 
   store.getState().bindWorker(async () => {
     await api.peek()?.clear()
@@ -71,14 +73,29 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
       }
       let rev = store.getState().setFace(faceId, result)
       if (found.ok && found.quad && validateQuad(found.quad)) {
-        rev = store.getState().setDetectedQuad(faceId, found.quad) ?? rev
+        rev = store.getState().setDetectedQuad(faceId, found.quad, found.rotation) ?? rev
       }
       await render(faceId, rev)
       return result
     },
     detect,
     async setQuad(faceId: FaceId, quad: Quad): Promise<void> {
-      const rev = store.getState().setQuad(faceId, quad)
+      const token = ++quadToken[faceId]
+      const session = ingestToken[faceId]
+      const before = store.getState().faces[faceId]
+      let rotation: Rotation | undefined
+      if (before && !before.rotationTouched) {
+        // Marking the corners by hand also straightens the face, unless the user already chose a rotation.
+        try {
+          const oriented = await api.get().orient(faceId, quad, store.getState().profileId)
+          if (oriented.ok) rotation = oriented.rotation
+        } catch {
+          // Keep the current rotation; the user can still tap Rotar.
+        }
+        if (token !== quadToken[faceId] || store.getState().faces[faceId]?.rotationTouched) rotation = undefined
+        if (token !== quadToken[faceId] || session !== ingestToken[faceId]) return
+      }
+      const rev = store.getState().setQuad(faceId, quad, rotation)
       if (rev !== null) await render(faceId, rev)
     },
     async setRotation(faceId: FaceId, rotation: Rotation): Promise<void> {

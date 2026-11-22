@@ -156,7 +156,7 @@ describe('processing api', () => {
       expect(seen).toBe(1024)
       expect(r).toEqual({ ok: true, quad: [
         { x: 40, y: 40 }, { x: 360, y: 40 }, { x: 360, y: 240 }, { x: 40, y: 240 },
-      ] })
+      ], rotation: 0 })
       expect(imaging.made.at(-1)?.closed).toBe(true)
     })
 
@@ -183,7 +183,26 @@ describe('processing api', () => {
       const api = createProcessingApi(createFakeImaging(), engine(async () => null))
       expect(await api.detect('back')).toEqual({ ok: false, reason: 'no-source' })
       await api.ingest('back', blob('800x600'))
-      expect(await api.detect('back')).toEqual({ ok: true, quad: null })
+      expect(await api.detect('back')).toEqual({ ok: true, quad: null, rotation: 0 })
+    })
+
+    it('orient: no-source, unknown profile, invalid quad and a valid rotation', async () => {
+      const api = createProcessingApi(createFakeImaging())
+      const q = defaultQuad(800, 600)
+      expect(await api.orient('front', q, 'dni-ar')).toEqual({ ok: false, reason: 'no-source' })
+      await api.ingest('front', blob('800x600'))
+      expect(await api.orient('front', q, 'nope')).toEqual({ ok: false, reason: 'unknown-profile' })
+      expect(await api.orient('front', [q[0], q[0], q[0], q[0]], 'dni-ar')).toEqual({ ok: false, reason: 'invalid-quad' })
+      const r = await api.orient('front', q, 'dni-ar')
+      expect(r.ok && [0, 90, 180, 270].includes(r.rotation)).toBe(true)
+    })
+
+    it('detect also returns the computed rotation (portrait quad gives a vertical axis)', async () => {
+      const portrait = [{ x: 100, y: 20 }, { x: 160, y: 20 }, { x: 160, y: 120 }, { x: 100, y: 120 }]
+      const api = createProcessingApi(createFakeImaging(), engine(async () => portrait as never))
+      await api.ingest('front', blob('200x150'))
+      const r = await api.detect('front')
+      expect(r.ok && r.quad !== null && [90, 270].includes(r.rotation)).toBe(true)
     })
 
     it('captures engine failures and retries init', async () => {
@@ -194,7 +213,7 @@ describe('processing api', () => {
       await api.ingest('front', blob('800x600'))
       expect(await api.detect('front')).toEqual({ ok: false, reason: 'detect-failed' })
       fail = false
-      expect(await api.detect('front')).toEqual({ ok: true, quad: null })
+      expect(await api.detect('front')).toEqual({ ok: true, quad: null, rotation: 0 })
       await api.detect('front')
       expect(calls.init).toBe(2)
     })

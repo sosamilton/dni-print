@@ -3,6 +3,8 @@ import { createCardFitEngine } from '../../src/engines/cardfit-engine.ts'
 import { createOpenCvEngine } from '../../src/engines/opencv-engine.ts'
 import { createScanicEngine } from '../../src/engines/scanic-engine.ts'
 import type { DetectionEngine } from '../../src/engines/detection-engine.ts'
+import { chooseRotation } from '../../src/core/geometry/orientation.ts'
+import { getProfile } from '../../src/core/profiles.ts'
 import { refineQuad } from '../../src/core/geometry/refine.ts'
 import type { Quad } from '../../src/core/geometry/types.ts'
 import { MAX_DETECT_SIDE_PX, MAX_SOURCE_SIDE_PX } from '../../src/worker/processing-api.ts'
@@ -102,4 +104,40 @@ async function run(images: { base64: string; mime: string }[]): Promise<HarnessR
   return results
 }
 
+export interface OrientationOutcome {
+  rotation: number
+  decidedBy: 'axis' | 'content'
+  ms: number
+}
+
+/** Rotation the production code picks for each annotated quad (px of the original photo), on the capped source. */
+async function runOrientation(images: { base64: string; mime: string; quad: [number, number][] }[]): Promise<(OrientationOutcome | null)[]> {
+  const profile = getProfile('dni-ar')!
+  const out: (OrientationOutcome | null)[] = []
+  for (const img of images) {
+    try {
+      const bitmap = await createImageBitmap(new Blob([fromBase64(img.base64)], { type: img.mime }), { imageOrientation: 'from-image' })
+      const ks = Math.min(1, MAX_SOURCE_SIDE_PX / Math.max(bitmap.width, bitmap.height))
+      const fw = Math.max(1, Math.round(bitmap.width * ks))
+      const fh = Math.max(1, Math.round(bitmap.height * ks))
+      const ctx = new OffscreenCanvas(fw, fh).getContext('2d')
+      if (!ctx) throw new Error('no 2d context')
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(bitmap, 0, 0, fw, fh)
+      const full = ctx.getImageData(0, 0, fw, fh)
+      const kx = fw / bitmap.width
+      const ky = fh / bitmap.height
+      bitmap.close()
+      const quad = img.quad.map(([x, y]) => ({ x: x * kx, y: y * ky })) as Quad
+      const t0 = performance.now()
+      const r = chooseRotation(full, quad, profile)
+      out.push({ rotation: r.rotation, decidedBy: r.decidedBy, ms: performance.now() - t0 })
+    } catch {
+      out.push(null)
+    }
+  }
+  return out
+}
+
 ;(window as unknown as { runEngines: typeof run }).runEngines = run
+;(window as unknown as { runOrientation: typeof runOrientation }).runOrientation = runOrientation

@@ -1,5 +1,5 @@
 // Worker logic, testable without a DOM: all browser imaging goes through ImagingBackend.
-import { FACE_FILTERS, getProfile, isWatermark, measureSharpness, normalizeWatermark, rectify, refineQuad, renderFace, stampFace, validateQuad } from '../core/index.ts'
+import { chooseRotation, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile, isWatermark, measureSharpness, normalizeWatermark, rectify, refineQuad, renderFace, stampFace, validateQuad } from '../core/index.ts'
 import type { PixelImage, Quad, RasterBackend } from '../core/index.ts'
 import { buildPdfDocument } from '../core/pdf.ts'
 import type { GrayFace, JpegFace } from '../core/pdf.ts'
@@ -85,18 +85,30 @@ export function createProcessingApi(imaging: ImagingBackend, engine?: DetectionE
         if (!small.width || !small.height) return { ok: false, reason: 'detect-failed' }
         const quad = await engine.detect(imaging.readPixels(small))
         if (stale()) return { ok: false, reason: 'superseded' }
-        if (!quad) return { ok: true, quad: null }
+        if (!quad) return { ok: true, quad: null, rotation: 0 }
         const kx = source.width / small.width
         const ky = source.height / small.height
         const scaled = quad.map((p) => ({ x: p.x * kx, y: p.y * ky })) as Quad
-        if (!validateQuad(scaled)) return { ok: true, quad: null }
+        if (!validateQuad(scaled)) return { ok: true, quad: null, rotation: 0 }
         // The rescale multiplies the reduced copy's error; snap the sides on the full-res source.
-        return { ok: true, quad: refineQuad(imaging.readPixels(source), scaled) }
+        const pixels = imaging.readPixels(source)
+        const refined = refineQuad(pixels, scaled)
+        const profile = getProfile(DEFAULT_PROFILE_ID)
+        return { ok: true, quad: refined, rotation: profile ? chooseRotation(pixels, refined, profile).rotation : 0 }
       } catch {
         return stale() ? { ok: false, reason: 'superseded' } : { ok: false, reason: 'detect-failed' }
       } finally {
         small?.close()
       }
+    },
+
+    async orient(faceId, quad, profileId) {
+      const source = sources.get(faceId)
+      if (!source) return { ok: false, reason: 'no-source' }
+      const profile = getProfile(profileId)
+      if (!profile) return { ok: false, reason: 'unknown-profile' }
+      if (!validateQuad(quad)) return { ok: false, reason: 'invalid-quad' }
+      return { ok: true, rotation: chooseRotation(imaging.readPixels(source), quad, profile).rotation }
     },
 
     async render(faceId, quad, rotation, profileId, rev, filter, watermark) {

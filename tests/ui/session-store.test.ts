@@ -24,6 +24,28 @@ describe('session store', () => {
     expect(s.getState().faces.front).toMatchObject({ quadOrigin: 'default', detectedQuad: null })
   })
 
+  it('resetQuad returns to the detected quad AND its computed rotation, not to 0', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    const det: Quad = [{ x: 10, y: 10 }, { x: 700, y: 20 }, { x: 690, y: 500 }, { x: 20, y: 510 }]
+    s.getState().setDetectedQuad('front', det, 180)
+    expect(s.getState().faces.front).toMatchObject({ rotation: 180, detectedRotation: 180, rotationTouched: false })
+    s.getState().setRotation('front', 270)
+    expect(s.getState().faces.front).toMatchObject({ rotation: 270, rotationTouched: true })
+    s.getState().setQuad('front', [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }], 90)
+    expect(s.getState().faces.front).toMatchObject({ rotation: 90, quadOrigin: 'manual', detectedRotation: 180 })
+    s.getState().resetQuad('front')
+    expect(s.getState().faces.front).toMatchObject({ quad: det, rotation: 180, rotationTouched: false })
+  })
+
+  it('without a detection, resetQuad goes back to the default quad and rotation 0', () => {
+    const s = createSessionStore({ revokeUrl: () => {} })
+    s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })
+    s.getState().setRotation('front', 90)
+    s.getState().resetQuad('front')
+    expect(s.getState().faces.front).toMatchObject({ quadOrigin: 'default', rotation: 0 })
+  })
+
   it('assigns monotonic revs and closes replaced bitmaps', () => {
     const s = createSessionStore({ revokeUrl: () => {} })
     const p1 = fakeBitmap(10, 10)

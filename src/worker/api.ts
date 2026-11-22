@@ -23,8 +23,13 @@ export type RenderResult =
   | { ok: false; rev: number; reason: RenderFailure }
 
 export type DetectResult =
-  | { ok: true; quad: Quad | null }
+  /** `rotation`: initial rotation that leaves the detected face upright (0 when there is no quad). */
+  | { ok: true; quad: Quad | null; rotation: Rotation }
   | { ok: false; reason: 'no-source' | 'superseded' | 'detect-failed' }
+
+export type OrientResult =
+  | { ok: true; rotation: Rotation }
+  | { ok: false; reason: 'no-source' | 'invalid-quad' | 'unknown-profile' | 'superseded' }
 
 export interface FaceCrop {
   quad: Quad
@@ -51,6 +56,8 @@ export interface ProcessingApi {
   ingest(faceId: FaceId, blob: Blob): Promise<IngestResult>
   /** Detects the document on a reduced copy; the quad is in px of the full-res source. Null quad: none found. */
   detect(faceId: FaceId): Promise<DetectResult>
+  /** Rotation that leaves the face upright for a (manually marked) quad; see `chooseRotation`. */
+  orient(faceId: FaceId, quad: Quad, profileId: string): Promise<OrientResult>
   /** Rectifies and renders a face with the given filter. Always echoes `rev` so callers can drop stale answers. */
   render(
     faceId: FaceId,

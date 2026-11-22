@@ -14,6 +14,10 @@ export interface FaceState {
   /** Quad found by the detector, if any; what "Restablecer" returns to. */
   detectedQuad: Quad | null
   rotation: Rotation
+  /** Rotation computed for `detectedQuad` (0 without one); what "Restablecer" returns to. */
+  detectedRotation: Rotation
+  /** True once the user tapped Rotar; from then on a new quad no longer recomputes the rotation. */
+  rotationTouched: boolean
   /** Revision of the inputs (quad, rotation, profile, face) this face currently has. */
   rev: number
   rendered: BitmapLike | null
@@ -43,11 +47,12 @@ export interface SessionActions {
   /** Registers how to clear the worker; called by the pipeline controller. */
   bindWorker(clearWorker: () => void | Promise<void>): void
   setFace(faceId: FaceId, input: { sourceSize: Size; previewBitmap: BitmapLike }): number
-  setQuad(faceId: FaceId, quad: Quad): number | null
-  /** Stores a detected quad and makes it current (origin 'auto'). */
-  setDetectedQuad(faceId: FaceId, quad: Quad): number | null
+  /** Stores a manual quad (origin 'manual'); with `rotation`, also the rotation computed for it. */
+  setQuad(faceId: FaceId, quad: Quad, rotation?: Rotation): number | null
+  /** Stores a detected quad and its computed rotation and makes them current (origin 'auto'). */
+  setDetectedQuad(faceId: FaceId, quad: Quad, rotation?: Rotation): number | null
   setRotation(faceId: FaceId, rotation: Rotation): number | null
-  /** Back to the detected quad (origin 'auto') or, without one, `defaultQuad` (origin 'default'); keeps the rotation. */
+  /** Back to the detected quad and its computed rotation (origin 'auto') or, without one, `defaultQuad` and 0 (origin 'default'). */
   resetQuad(faceId: FaceId): number | null
   /** Returns the new rev of every affected face. */
   setProfile(profileId: string): Partial<Record<FaceId, number>>
@@ -138,6 +143,8 @@ export function createSessionStore(deps: SessionDeps) {
               quadOrigin: 'default',
               detectedQuad: null,
               rotation: 0,
+              detectedRotation: 0,
+              rotationTouched: false,
               rev,
               rendered: null,
               sharpness: null,
@@ -147,24 +154,26 @@ export function createSessionStore(deps: SessionDeps) {
         return rev
       },
 
-      setQuad(faceId, quad) {
-        return patchFace(faceId, { quad, quadOrigin: 'manual' })
+      setQuad(faceId, quad, rotation) {
+        return patchFace(faceId, rotation === undefined ? { quad, quadOrigin: 'manual' } : { quad, quadOrigin: 'manual', rotation })
       },
 
-      setDetectedQuad(faceId, quad) {
-        return patchFace(faceId, { quad, quadOrigin: 'auto', detectedQuad: quad })
+      setDetectedQuad(faceId, quad, rotation = 0) {
+        return patchFace(faceId, { quad, quadOrigin: 'auto', detectedQuad: quad, rotation, detectedRotation: rotation, rotationTouched: false })
       },
 
       setRotation(faceId, rotation) {
-        return patchFace(faceId, { rotation })
+        return patchFace(faceId, { rotation, rotationTouched: true })
       },
 
       resetQuad(faceId) {
         const face = get().faces[faceId]
         if (!face) return null
-        if (face.detectedQuad) return patchFace(faceId, { quad: face.detectedQuad, quadOrigin: 'auto' })
+        if (face.detectedQuad) {
+          return patchFace(faceId, { quad: face.detectedQuad, quadOrigin: 'auto', rotation: face.detectedRotation, rotationTouched: false })
+        }
         const { widthPx, heightPx } = face.sourceSize
-        return patchFace(faceId, { quad: defaultQuad(widthPx, heightPx), quadOrigin: 'default' })
+        return patchFace(faceId, { quad: defaultQuad(widthPx, heightPx), quadOrigin: 'default', rotation: 0, rotationTouched: false })
       },
 
       setProfile(profileId) {
