@@ -102,3 +102,23 @@ test('arrastrar una esquina con el mouse y girar', async ({ page }) => {
   await page.getByRole('button', { name: cropStep.rotate }).click()
   await expect(page.getByRole('img', { name: cropStep.resultLabel })).toBeVisible()
 })
+
+test('escritorio: fichas Frente y Dorso clicables con estado; las dos revisadas avanzan', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await openCrop(page)
+  const chips = page.getByRole('list', { name: cropStep.faceSelectorLabel })
+  await page.getByRole('button', { name: /Dorso/ }).click()
+  await expect(page.getByText(cropStep.faceCounter('Dorso', 2, 2))).toBeVisible()
+  await ok(page).click()
+  // Dorso revisada: pasa a la pendiente (Frente), todavía en el paso 2.
+  await expect(page.getByText(cropStep.faceCounter('Frente', 1, 2))).toBeVisible()
+  await expect(chips.getByText(cropStep.faceDone)).toHaveCount(1)
+  // Editar una cara revisada la vuelve pendiente.
+  await page.getByRole('button', { name: /Dorso/ }).click()
+  await page.getByRole('button', { name: cropStep.corners[0] }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(chips.getByText(cropStep.faceDone)).toHaveCount(0)
+  await ok(page).click()
+  await ok(page).click()
+  await expect(page.getByRole('heading', { level: 1, name: steps.print.title })).toBeVisible()
+})

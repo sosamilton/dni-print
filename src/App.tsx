@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { validateQuad } from './core/index.ts'
+import { markReviewed, nextPendingFace, type Reviews } from './ui/crop-review-model.ts'
 import { pipeline } from './ui/pipeline.ts'
 import { sheetLayout } from './ui/print-step-model.ts'
 import { canContinue } from './ui/load-step-model.ts'
@@ -16,6 +17,7 @@ export function App() {
   const { step, forward, back, restart } = useWizardNavigation()
   const faces = useSession((s) => s.faces)
   const [cropFace, setCropFace] = useState<FaceId>('front')
+  const [reviews, setReviews] = useState({} as Reviews)
   const [cleared, setCleared] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const primaryRef = useRef(null as HTMLButtonElement | null)
@@ -34,6 +36,7 @@ export function App() {
   const startOver = useCallback(() => {
     setSheetOpen(false)
     pipeline.clearSession()
+    setReviews({})
     setCleared(true)
     restart()
   }, [restart])
@@ -42,10 +45,20 @@ export function App() {
 
   function onPrimary() {
     if (output) setSheetOpen(true)
-    else if (step === 'crop' && cropFace === 'front') setCropFace('back')
-    else {
+    else if (step === 'crop') {
+      const face = faces[cropFace]
+      if (!face) return
+      const next = markReviewed(reviews, cropFace, face)
+      setReviews(next)
+      const pending = nextPendingFace(next, faces, cropFace)
+      if (pending) setCropFace(pending)
+      else forward()
+    } else {
       setCleared(false)
-      if (step === 'load') setCropFace('front') // step 2 always starts on the front
+      if (step === 'load') {
+        setCropFace('front') // step 2 always starts on the front
+        setReviews({})
+      }
       forward()
     }
   }
@@ -69,6 +82,8 @@ export function App() {
       <StepBody
         step={step}
         cropFace={cropFace}
+        reviews={reviews}
+        onSelectFace={wide ? setCropFace : undefined}
         output={{ sheetOpen, onSheetClose: closeSheet, returnFocusRef: primaryRef, onRestart: startOver }}
       />
     </WizardLayout>

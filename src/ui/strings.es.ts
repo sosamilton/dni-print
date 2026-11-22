@@ -132,6 +132,7 @@ export const strings = {
     adjust: 'Ajustar esquinas',
     detected: 'Documento detectado',
     faceSelectorLabel: 'Caras del documento',
+    thumbnailLabel: (face: string) => `Miniatura de ${face}`,
     faceDone: 'revisada',
     facePending: 'pendiente',
     editorLabel: 'Editor de esquinas',

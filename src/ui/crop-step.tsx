@@ -4,28 +4,64 @@ import type { FaceId } from '../worker/api.ts'
 import { BitmapCanvas } from './bitmap-canvas.tsx'
 import { CornerEditor } from './corner-editor.tsx'
 import { isLowResolution, nextRotation } from './corner-editor-model.ts'
+import { CROP_ORDER, faceReviewState, type Reviews, type ReviewState } from './crop-review-model.ts'
 import { pipeline } from './pipeline.ts'
 import { useSession } from './session-store.ts'
 import { strings } from './strings.es.ts'
 import './crop-step.css'
 
-const CROP_ORDER: readonly FaceId[] = ['front', 'back']
+interface FaceChipsProps {
+  faceId: FaceId
+  reviews: Reviews
+  /** Present from 900px: the chips become buttons with a thumbnail. */
+  onSelect?: (id: FaceId) => void
+}
 
-function FaceChips({ faceId }: { faceId: FaceId }) {
+function ChipBody({ id, state, thumb }: { id: FaceId; state: ReviewState; thumb: boolean }) {
   const copy = strings.cropStep
+  const face = useSession((s) => s.faces[id])
+  const name = strings.loadStep.faces[id]
   return (
-    <ul className="crop-faces" aria-label={copy.faceSelectorLabel}>
+    <>
+      {thumb && face && <BitmapCanvas bitmap={face.previewBitmap} label={copy.thumbnailLabel(name)} className="crop-face-thumb" />}
+      <span className="crop-face-name">{name}</span>
+      <span className="crop-face-state" data-state={state}>{state === 'reviewed' ? copy.faceDone : copy.facePending}</span>
+    </>
+  )
+}
+
+function FaceChip({ id, current, state, onSelect }: { id: FaceId; current: boolean; state: ReviewState; onSelect?: (id: FaceId) => void }) {
+  return (
+    <li className="crop-face-chip" data-current={current} data-state={state} aria-current={current ? 'step' : undefined}>
+      {onSelect && (
+        <button type="button" className="crop-face-button" onClick={() => onSelect(id)}>
+          <ChipBody id={id} state={state} thumb />
+        </button>
+      )}
+      {!onSelect && <ChipBody id={id} state={state} thumb={false} />}
+    </li>
+  )
+}
+
+export function FaceChips({ faceId, reviews, onSelect }: FaceChipsProps) {
+  const faces = useSession((s) => s.faces)
+  return (
+    <ul className="crop-faces" aria-label={strings.cropStep.faceSelectorLabel}>
       {CROP_ORDER.map((id) => (
-        <li key={id} className="crop-face-chip" data-current={id === faceId} aria-current={id === faceId ? 'step' : undefined}>
-          {strings.loadStep.faces[id]}
-          <span className="crop-face-state">{id === 'front' && faceId === 'back' ? copy.faceDone : copy.facePending}</span>
-        </li>
+        <FaceChip key={id} id={id} current={id === faceId} state={faceReviewState(reviews, id, faces[id])} onSelect={onSelect} />
       ))}
     </ul>
   )
 }
 
-export function CropStep({ faceId }: { faceId: FaceId }) {
+export interface CropStepProps {
+  faceId: FaceId
+  reviews: Reviews
+  /** Present from 900px: lets the chips pick the face. */
+  onSelectFace?: (id: FaceId) => void
+}
+
+export function CropStep({ faceId, reviews, onSelectFace }: CropStepProps) {
   const face = useSession((s) => s.faces[faceId])
   const [adjusting, setAdjusting] = useState(false)
   if (!face) return null
@@ -41,7 +77,7 @@ export function CropStep({ faceId }: { faceId: FaceId }) {
   if (face.quadOrigin === 'auto' && !adjusting) {
     return (
       <div className="crop-step">
-        <FaceChips faceId={faceId} />
+        <FaceChips faceId={faceId} reviews={reviews} onSelect={onSelectFace} />
         <p className="crop-counter">{copy.faceCounter(strings.loadStep.faces[faceId], index, CROP_ORDER.length)}</p>
         {face.rendered && valid && (
           <BitmapCanvas bitmap={face.rendered} label={copy.resultLabel} className="crop-result" />
@@ -60,6 +96,7 @@ export function CropStep({ faceId }: { faceId: FaceId }) {
 
   return (
     <div className="crop-step">
+      {onSelectFace && <FaceChips faceId={faceId} reviews={reviews} onSelect={onSelectFace} />}
       <p className="crop-counter">{copy.faceCounter(strings.loadStep.faces[faceId], index, CROP_ORDER.length)}</p>
       <p className="crop-instruction">{face.quadOrigin === 'default' ? copy.notFound : copy.instruction}</p>
       <CornerEditor face={face} onCommit={(quad) => void pipeline.setQuad(faceId, quad)} />
