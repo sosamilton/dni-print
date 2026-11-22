@@ -71,7 +71,7 @@ export interface SessionActions {
   trackBlobUrl(url: string): void
   setCopies(copies: 1 | 2): void
   /** Creates a tracked blob URL for the PDF; release it with `releaseUrl`. */
-  createPdfUrl(pdf: Uint8Array): string
+  createPdfUrl(pdf: Uint8Array | Blob): string
   releaseUrl(url: string): void
   /** Keeps the built PDF's bytes in memory (never in storage) until clearSession. */
   setPdf(bytes: Uint8Array, copies: 1 | 2): void
@@ -242,7 +242,7 @@ export function createSessionStore(deps: SessionDeps) {
 
       createPdfUrl(pdf) {
         const make = deps.createUrl ?? ((blob: Blob) => URL.createObjectURL(blob))
-        const url = make(new Blob([pdf as unknown as ArrayBuffer], { type: 'application/pdf' }))
+        const url = make(pdf instanceof Blob ? pdf : new Blob([pdf as unknown as ArrayBuffer], { type: 'application/pdf' }))
         set((s) => ({ blobUrls: [...s.blobUrls, url] }))
         return url
       },

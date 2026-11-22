@@ -291,7 +291,7 @@ function OutputOptions({
   const copies = useSession((s) => s.copies)
   const [after, setAfter] = useState(null as After | null)
   const [shareFailed, setShareFailed] = useState(false)
-  const [printNote, setPrintNote] = useState(null as 'unavailable' | 'failed' | null)
+  const [printNote, setPrintNote] = useState(null as 'unavailable' | 'failed' | 'opened' | null)
   const afterRef = useRef(null as HTMLParagraphElement | null)
   const optionsRef = useRef(null as HTMLDivElement | null)
   const returning = useRef(false)
@@ -330,8 +330,8 @@ function OutputOptions({
   })
   const onPrint = act((file) => {
     void printPdf(file).then((outcome) => {
-      if (outcome === 'printed') setAfter('printed')
-      else setPrintNote(outcome)
+      if (outcome === 'printed' || outcome === 'shared') setAfter('printed')
+      else if (outcome === 'opened' || outcome === 'unavailable' || outcome === 'failed') setPrintNote(outcome)
     })
   })
   const onSave = act(() => {
@@ -375,7 +375,7 @@ function OutputOptions({
   const o = strings.output.options
   const cards: Record<Exclude<OutputOption, 'send'>, { icon: IconName; title: string; help: string; onClick: () => void }> = {
     share: { icon: 'share', title: o.share.title, help: o.share.help, onClick: onShare },
-    print: { icon: 'print', title: o.print.title, help: o.print.help, onClick: onPrint },
+    print: { icon: 'print', title: o.print.title, help: ios ? o.print.helpIos : o.print.help, onClick: onPrint },
     save: { icon: 'save', title: o.save.title[plan.saveLabel], help: o.save.help[plan.saveLabel], onClick: onSave },
   }
 
@@ -419,7 +419,7 @@ function OutputOptions({
             )}
             {option === 'print' && printNote && (
               <p className={printNote === 'failed' ? 'print-error' : 'print-notice hint'} role={printNote === 'failed' ? 'alert' : 'status'}>
-                {printNote === 'failed' ? strings.output.printFailed : strings.output.printUnavailable}
+                {printNote === 'failed' ? strings.output.printFailed : printNote === 'opened' ? strings.output.printOpened : strings.output.printUnavailable}
               </p>
             )}
             {option === 'save' && ios && <IosGuide />}

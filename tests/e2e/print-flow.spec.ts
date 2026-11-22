@@ -46,18 +46,45 @@ test('cargar, esquinas, 2 copias, Guardar PDF con 4 imágenes, aviso, Hacer otra
   await expect(page.getByRole('button', { name: steps.load.primary, exact: true })).toBeDisabled()
 })
 
-test('Imprimir ahora todavía es un aviso y no descarga ni muestra el aviso posterior', async ({ page }) => {
-  let downloads = 0
-  page.on('download', () => downloads++)
+test('Imprimir ahora crea un iframe blob, llama a print y avisa sin violaciones de CSP', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __prints: string[]; __cspViolations: string[] }
+    w.__prints = []
+    w.__cspViolations = []
+    document.addEventListener('securitypolicyviolation', (e) => w.__cspViolations.push(e.violatedDirective + ' ' + e.blockedURI))
+    Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+      configurable: true,
+      get() {
+        const frame = this as HTMLIFrameElement
+        return { focus() {}, print() { w.__prints.push(frame.src) } }
+      },
+    })
+  })
   await page.goto('./')
   await toPrint(page)
   const print = card(page, o.print.title)
   await expect(print).toBeEnabled()
   await print.click()
-  await expect(page.getByText(output.printUnavailable)).toBeVisible()
-  await expect(page.getByText(output.after.printed)).toHaveCount(0)
-  await expect(print).toBeVisible()
-  expect(downloads).toBe(0)
+  await expect(page.getByText(output.after.printed)).toBeVisible()
+  const prints = await page.evaluate('window.__prints')
+  expect(prints).toHaveLength(1)
+  expect((prints as string[])[0]).toMatch(/^blob:/)
+  expect(await page.evaluate('window.__cspViolations')).toEqual([])
+})
+
+test.describe('Safari macOS', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17 Safari/605.1.15' })
+
+  test('Imprimir abre el PDF en una pestaña nueva con la nota de Archivo › Imprimir', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.open = () => ({}) as Window
+    })
+    await page.goto('./')
+    await toPrint(page)
+    await card(page, o.print.title).click()
+    await expect(page.getByText(output.printOpened)).toBeVisible()
+    await expect(page.getByText(output.after.printed)).toHaveCount(0)
+  })
 })
 
 test('Empezar de nuevo desde el menú', async ({ page }) => {

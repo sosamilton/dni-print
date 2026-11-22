@@ -145,14 +145,15 @@ export const strings = {
     retry: 'Probá de nuevo',
     options: {
       share: { title: 'Compartir o mandar', help: 'WhatsApp, Gmail, Drive… El PDF va adjunto.' },
-      print: { title: 'Imprimir ahora', help: 'Elegí Tamaño real o 100 %.' },
+      print: { title: 'Imprimir ahora', help: 'Elegí Tamaño real o 100 %.', helpIos: 'Elegí Imprimir. Después, Tamaño real o 100 %.' },
       save: {
         title: { phone: 'Guardar en el teléfono', pdf: 'Guardar PDF' },
         help: { phone: 'Queda en Descargas o en Archivos.', pdf: 'Queda en tu carpeta de descargas.' },
       },
       send: { title: 'Mandar a un número de WhatsApp o un mail', help: 'Abrimos el chat o el correo con el mensaje listo.' },
     },
-    printUnavailable: 'Imprimir directo todavía no está disponible. Por ahora guardá el PDF e imprimilo desde ahí.',
+    printUnavailable: 'Este navegador no puede imprimir directo. Guardá el PDF e imprimilo desde ahí.',
+    printOpened: 'Abrimos el PDF en otra pestaña. Usá Archivo › Imprimir y elegí Tamaño real o 100 %.',
     printFailed: 'No pudimos abrir la impresión. Probá de nuevo o guardá el PDF.',
     after: {
       shared: 'PDF compartido. ¿Algo más?',
