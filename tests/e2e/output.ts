@@ -10,6 +10,8 @@ export async function toPrint(page: Page, file = pngFile) {
   await page.getByTestId('back-gallery').setInputFiles(file())
   await page.getByRole('button', { name: steps.load.primary, exact: true }).click()
   await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
+  // Wait for the back face before confirming it: a slow runner can otherwise click twice on the front.
+  await expect(page.getByText(strings.cropStep.faceCounter(strings.loadStep.faces.back, 2, 2))).toBeVisible()
   await page.getByRole('button', { name: steps.crop.primary, exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: steps.print.title })).toBeVisible()
 }

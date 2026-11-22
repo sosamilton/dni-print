@@ -144,6 +144,8 @@ test.describe('celular', () => {
     await expect(page.getByRole('button', { name: output.desktop.useMailProgram })).toHaveCount(0)
     const field = await openPanel(page)
     await field.fill('011 15 2345-6789')
+    // Enter only sends once the PDF is built (the button shows the same state).
+    await expect(page.getByRole('button', { name: output.send.whatsappButton })).toBeEnabled()
     const [popup] = await Promise.all([page.waitForEvent('popup'), field.press('Enter')])
     expect(popup).toBeTruthy()
     const expected = `https://wa.me/5491123456789?text=${encodeURIComponent(wa.message)}`
