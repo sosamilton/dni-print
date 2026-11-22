@@ -59,6 +59,8 @@ test('tras Empezar de nuevo no queda nada en el almacenamiento y la recarga arra
 })
 
 test('con un tema elegido, Empezar de nuevo deja solo la clave de preferencias, sin imágenes ni PDF', async ({ page }) => {
+  // The three-state control lives in the bottom sheet (< 900px).
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('./')
   await page.getByRole('button', { name: menu.buttonLabel }).click()
   await page.getByRole('group', { name: menu.theme.label }).getByRole('button', { name: menu.theme.options.dark }).click()

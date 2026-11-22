@@ -15,6 +15,9 @@ const stored = (page: Page) => page.evaluate((k) => localStorage.getItem(k), KEY
 const themeColors = (page: Page) =>
   page.evaluate(() => [...document.querySelectorAll('meta[name="theme-color"]')].map((m) => m.getAttribute('content')))
 
+// The three-state control lives in the bottom sheet (< 900px); the desktop bar has its own toggle (see below).
+test.use({ viewport: { width: 390, height: 844 } })
+
 async function openMenu(page: Page) {
   await page.getByRole('button', { name: menu.buttonLabel }).click()
   return page.getByRole('group', { name: menu.theme.label })
@@ -161,3 +164,49 @@ for (const { theme, system, reference } of [
     expect(result!.actual).toBe(result!.expected)
   })
 }
+
+test.describe('escritorio', () => {
+  test.use({ viewport: { width: 1280, height: 720 } })
+
+  test('el botón de tema pasa de Sistema claro a Oscuro, se guarda y sigue oscuro al recargar', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' })
+    await page.goto('./')
+    const toggle = page.getByRole('button', { name: menu.bar.theme, exact: true })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(await themeAttr(page)).toBe('dark')
+    expect(await stored(page)).toBe('{"v":1,"theme":"dark"}')
+    await expect.poll(() => bodyBg(page)).toBe(DARK_BG)
+
+    await page.reload()
+    expect(await themeAttr(page)).toBe('dark')
+    await expect(page.getByRole('button', { name: menu.bar.theme, exact: true })).toHaveAttribute('aria-pressed', 'true')
+
+    await page.getByRole('button', { name: menu.bar.theme, exact: true }).click()
+    expect(await themeAttr(page)).toBe('light')
+    expect(await stored(page)).toBe('{"v":1,"theme":"light"}')
+  })
+
+  test('con sistema oscuro el botón arranca presionado y pasa a Claro', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await page.goto('./')
+    const toggle = page.getByRole('button', { name: menu.bar.theme, exact: true })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(await themeAttr(page)).toBe('light')
+    await expect.poll(() => bodyBg(page)).toBe(LIGHT_BG)
+  })
+
+  test('en Sistema, el botón sigue un cambio del sistema con la página abierta', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' })
+    await page.goto('./')
+    const toggle = page.getByRole('button', { name: menu.bar.theme, exact: true })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await toggle.click()
+    expect(await stored(page)).toBe('{"v":1,"theme":"light"}')
+  })
+})

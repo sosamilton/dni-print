@@ -48,6 +48,22 @@ test('Empezar de nuevo desde el menú', async ({ page }) => {
   await expect(page.getByText(doneStep.cleared)).toBeVisible()
 })
 
+test.describe('celular', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('Empezar de nuevo desde la hoja del menú', async ({ page }) => {
+    await toPrint(page)
+    await page.getByRole('button', { name: menu.buttonLabel }).click()
+    const sheet = page.getByRole('dialog', { name: menu.sheetTitle })
+    await sheet.getByRole('button', { name: menu.restart }).click()
+    const title = page.getByRole('heading', { level: 1, name: steps.load.title })
+    await expect(title).toBeVisible()
+    await expect(page.getByText(doneStep.cleared)).toBeVisible()
+    await expect(sheet).toBeHidden()
+    await expect(title).toBeFocused()
+  })
+})
+
 test('Blanco y negro y Ahorro de tinta generan PDF en escala de grises', async ({ page }) => {
   await toPrint(page)
   await expect(page.getByRole('button', { name: printStep.filters.color })).toHaveAttribute('aria-pressed', 'true')

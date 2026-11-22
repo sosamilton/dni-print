@@ -48,10 +48,11 @@ async function walkThroughApp(page: Page) {
 
   await page.getByLabel(strings.doneStep.whatsapp.label).fill('11 2345 6789')
 
-  // Menu: open the privacy dialog; "Código fuente" is only checked, never followed (it leaves the origin).
+  // Desktop bar: "Código fuente" in ⋯ is only checked, never followed (it leaves the origin); then the privacy dialog.
   await page.getByRole('button', { name: menu.buttonLabel }).click()
   await expect(page.getByText(menu.sourceCode, { exact: false }).first()).toBeVisible()
-  await page.getByRole('button', { name: menu.privacy, exact: true }).click()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: menu.bar.privacy, exact: true }).click()
   const dialog = page.getByRole('dialog', { name: privacyDialog.title })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: menu.close, exact: true }).click()

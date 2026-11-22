@@ -16,12 +16,16 @@ export const strings = {
   },
   menu: {
     button: '⋮',
+    desktopButton: '⋯',
     buttonLabel: 'Más opciones',
+    sheetTitle: 'Menú',
     privacy: 'Cómo funciona y privacidad',
     sourceCode: 'Código fuente',
     sourceCodeUnavailable: 'No disponible en esta versión',
     close: 'Cerrar',
     restart: 'Empezar de nuevo',
+    restartNote: 'Borra las fotos y el PDF',
+    externalMark: '↗',
     install: 'Instalar la app',
     shareApp: 'Compartir DNI Print',
     shareAppCopied: 'Enlace copiado',
@@ -30,6 +34,11 @@ export const strings = {
     theme: {
       label: 'Tema',
       options: { system: 'Sistema', light: 'Claro', dark: 'Oscuro' },
+    },
+    bar: {
+      privacy: 'Cómo funciona',
+      shareApp: 'Compartir la app',
+      theme: 'Tema oscuro',
     },
   },
   shareApp: {
@@ -43,7 +52,7 @@ export const strings = {
       'Las fotos no se guardan ni se envían a ningún lado. Al cerrar la app, se borran.',
       'Compartir el PDF o mandarlo por WhatsApp lo decidís vos: la app solo abre el menú de compartir o el chat cuando lo tocás.',
       'Si lo mandás por mail o WhatsApp Web, lo decidís vos y el mensaje pasa por esos servicios, no por esta app: la app solo abre la ventana con el texto armado.',
-      'DNI Print es software libre, con licencia AGPL-3.0. El código fuente está en el menú ⋮, en «Código fuente».',
+      'DNI Print es software libre, con licencia AGPL-3.0. El código fuente está en el menú, en «Código fuente».',
     ],
   },
   loadStep: {

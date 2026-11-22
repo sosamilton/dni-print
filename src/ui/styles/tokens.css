@@ -118,6 +118,7 @@
     --color-border-hairline: #2B353D;
     --color-placeholder: #242D34;
     --color-brand-corners: #74ACDF;
+    --color-danger: #F28B82;
   }
 }
 
@@ -132,6 +133,7 @@
   --color-border-hairline: #2B353D;
   --color-placeholder: #242D34;
   --color-brand-corners: #74ACDF;
+  --color-danger: #F28B82;
 }
 
 :root[data-theme='light'] {
@@ -154,9 +156,9 @@
   body .wizard-header-bar > .brand, body .wizard-header-bar > :first-child { grid-column: 1; grid-row: 1; }
   body .wizard-progress { grid-column: 2; grid-row: 1; margin-top: 0; }
   body .wizard-step-labels { grid-column: 2; grid-row: 2; }
-  body .wizard-counter { grid-column: 3; grid-row: 1; margin: 0; }
+  body .wizard-counter { grid-column: 3; grid-row: 1; margin: 0; white-space: nowrap; }
   body .wizard-header .app-menu { grid-column: 4; grid-row: 1; }
-  body .wizard-update { grid-column: 3; grid-row: 2; }
+  body .wizard-update { grid-column: 3 / -1; grid-row: 2; } /* spans under the bar so it never widens column 3 (story 9-2) */
   body .wizard-back-row { grid-column: 1; grid-row: 2; }
   body .wizard-title { grid-column: 1 / -1; grid-row: 3; }
   body .wizard-header > .visually-hidden { grid-row: 4; }
@@ -185,4 +187,9 @@
   body .wizard:has(.print-step[data-layout='columns']) .wizard-footer { grid-column: 2; grid-row: 3; position: static; align-self: end; z-index: 1; padding: 0 0 var(--spacing-4); background: transparent; }
   body .wizard:has(.print-step[data-layout='columns']) .wizard-footer .button-primary { max-width: none; margin-left: 0; }
   body .wizard:has(.print-step[data-layout='columns']) .sheet-preview { max-height: 70vh; width: auto; max-width: 100%; }
+}
+
+/* Header bar (story 9-2): between 900px and 999px the bar keeps its labels and drops the decorative icons so it fits without horizontal scroll. */
+@media (min-width: 900px) and (max-width: 999px) {
+  body .app-menu-bar .app-menu-icon { display: none; }
 }

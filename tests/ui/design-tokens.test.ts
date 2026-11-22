@@ -46,6 +46,7 @@ const DARK_COLORS: Record<string, string> = {
   'accent-soft': '#1C2E42',
   'border-hairline': '#2B353D',
   placeholder: '#242D34',
+  danger: '#F28B82',
 }
 
 const TYPOGRAPHY: Record<string, { family: string; size: string; weight: string; lineHeight: string }> = {

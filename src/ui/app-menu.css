@@ -45,9 +45,8 @@
 
 .app-menu-item {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--spacing-3);
   box-sizing: border-box;
   width: 100%;
   min-height: var(--hit-area);
@@ -75,10 +74,146 @@
   cursor: default;
 }
 
+.app-menu-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .app-menu-item-note {
   font-family: var(--font-body-family);
   font-size: var(--font-label-size);
   font-weight: var(--font-body-weight);
+}
+
+.app-menu-icon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.app-menu-item:focus-visible,
+.app-menu-toggle:focus-visible,
+.app-bar-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-ink-primary);
+  outline-offset: calc(var(--hairline) * -2);
+}
+
+/* «Empezar de nuevo»: destructive, always last and set apart. */
+.app-menu-danger,
+.app-menu-danger:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+.app-menu-danger .app-menu-item-note {
+  color: var(--color-ink-secondary);
+}
+
+.app-menu-separated {
+  margin-top: var(--spacing-1);
+  padding-top: var(--spacing-1);
+  border-top: var(--hairline) solid var(--color-border-hairline);
+}
+
+/* Bottom sheet (< 900px): full width, rounded top corners, dimmed backdrop by theme. */
+.menu-sheet {
+  box-sizing: border-box;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: 85vh;
+  max-height: 85dvh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-top: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-xl) var(--rounded-xl) 0 0;
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+  font-family: var(--font-body-family);
+  overflow-wrap: anywhere;
+}
+
+.menu-sheet-body {
+  max-width: var(--column-max);
+  margin: 0 auto;
+  padding: var(--spacing-3) var(--spacing-4) calc(var(--spacing-5) + env(safe-area-inset-bottom));
+}
+
+.menu-sheet-group + .menu-sheet-group {
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: var(--hairline) solid var(--color-border-hairline);
+}
+
+.menu-sheet::backdrop {
+  background: color-mix(in srgb, var(--color-ink-primary) 40%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .menu-sheet::backdrop {
+    background: color-mix(in srgb, var(--color-surface-base) 75%, transparent);
+  }
+}
+
+:root[data-theme='dark'] .menu-sheet::backdrop {
+  background: color-mix(in srgb, var(--color-surface-base) 75%, transparent);
+}
+
+/* Desktop bar (>= 900px). */
+.app-menu-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.app-bar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--hit-area);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--rounded-sm);
+  background: transparent;
+  color: var(--color-ink-primary);
+  font-family: var(--font-label-family);
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  line-height: var(--font-label-line-height);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.app-bar-button:hover,
+.app-bar-button[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+}
+
+.app-bar-button[aria-pressed='true'] {
+  color: var(--color-accent);
+}
+
+.app-bar-share,
+.app-menu-more {
+  position: relative;
+}
+
+.app-bar-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1;
+  width: max-content;
+  max-width: calc(var(--column-max) / 1.5);
+  margin-top: var(--spacing-1);
+  padding: var(--spacing-1);
+  border: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface-raised);
 }
 
 .privacy-dialog {
