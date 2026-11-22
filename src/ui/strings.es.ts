@@ -23,6 +23,14 @@ export const strings = {
     close: 'Cerrar',
     restart: 'Empezar de nuevo',
     install: 'Instalar la app',
+    shareApp: 'Compartir DNI Print',
+    shareAppCopied: 'Enlace copiado',
+    shareAppCopyFailed: 'No pudimos copiar el enlace. Copialo a mano desde la barra de direcciones.',
+    shareAppWhatsapp: 'Abrir WhatsApp',
+  },
+  shareApp: {
+    title: 'DNI Print',
+    text: 'Imprimí tu DNI a tamaño real, desde el teléfono y sin subir nada.',
   },
   privacyDialog: {
     title: 'Cómo funciona y privacidad',

@@ -1,16 +1,22 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type FocusEvent } from 'react'
 import { installPrompt } from './install-prompt.ts'
 import { PrivacyDialog } from './privacy-dialog.tsx'
+import { appShareUrl, appWhatsappLink, shareApp } from './share-app.ts'
 import { currentSourceCodeUrl } from './source-link.ts'
 import { strings } from './strings.es.ts'
 import './app-menu.css'
 
 const SOURCE_CODE_URL = currentSourceCodeUrl()
 
+function currentShareUrl(): string {
+  return appShareUrl(__SITE_URL__, window.location, import.meta.env.BASE_URL)
+}
+
 /** Header ⋮ menu as a disclosure: a toggle button plus a list of a button and a link. */
 export function AppMenu({ onRestart }: { onRestart?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [privacyOpen, setPrivacyOpen] = useState(false)
+  const [shareNote, setShareNote] = useState(null as 'copied' | 'failed' | null)
   const containerRef = useRef(null as HTMLDivElement | null)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const listId = useId()
@@ -49,6 +55,15 @@ export function AppMenu({ onRestart }: { onRestart?: () => void }) {
     if (next instanceof Node && !event.currentTarget.contains(next)) setMenuOpen(false)
   }
 
+  const onShareApp = () => {
+    setShareNote(null)
+    void shareApp(navigator, currentShareUrl()).then((outcome) => {
+      if (outcome === 'copied') setShareNote('copied')
+      else if (outcome === 'failed') setShareNote('failed')
+      else if (outcome === 'shared') closeMenuAndRefocus()
+    })
+  }
+
   const closePrivacy = () => {
     setPrivacyOpen(false)
     toggleRef.current?.focus()
@@ -63,7 +78,10 @@ export function AppMenu({ onRestart }: { onRestart?: () => void }) {
         aria-label={strings.menu.buttonLabel}
         aria-expanded={menuOpen}
         aria-controls={listId}
-        onClick={() => setMenuOpen((open) => !open)}
+        onClick={() => {
+          setShareNote(null)
+          setMenuOpen((open) => !open)
+        }}
       >
         <span aria-hidden="true">{strings.menu.button}</span>
       </button>
@@ -72,6 +90,27 @@ export function AppMenu({ onRestart }: { onRestart?: () => void }) {
           <button type="button" className="app-menu-item" onClick={openPrivacy}>
             {strings.menu.privacy}
           </button>
+        </li>
+        <li>
+          <button type="button" className="app-menu-item" onClick={onShareApp}>
+            {strings.menu.shareApp}
+          </button>
+          {shareNote && (
+            <p className="app-menu-note" role="status">
+              {shareNote === 'copied' ? strings.menu.shareAppCopied : strings.menu.shareAppCopyFailed}
+            </p>
+          )}
+          {shareNote === 'copied' && (
+            <a
+              className="app-menu-item"
+              href={appWhatsappLink(currentShareUrl())}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMenuAndRefocus}
+            >
+              {strings.menu.shareAppWhatsapp}
+            </a>
+          )}
         </li>
         {installable && (
           <li>

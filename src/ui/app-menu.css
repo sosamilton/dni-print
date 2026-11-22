@@ -136,3 +136,10 @@
   line-height: var(--font-button-line-height);
   cursor: pointer;
 }
+
+.app-menu-note {
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-ink-secondary);
+  font-size: var(--font-label-size);
+}

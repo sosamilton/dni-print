@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadEnv } from 'vite'
-import { gitFromCli, resolveBuildInfo } from './build-info.ts'
+import { canonicalUrl, gitFromCli, resolveBase, resolveBuildInfo, resolveSiteUrl } from './build-info.ts'
 
 export interface UrlRule {
   url: string
@@ -25,8 +25,9 @@ function matchesRule(url: string, rule: UrlRule): boolean {
   return false
 }
 
-/** True when the URL matches a rule, or is the build's repository URL or its `/tree/…` source link. */
-export function isAllowedUrl(url: string, rules: UrlRule[], repoUrl: string | null): boolean {
+/** True when the URL matches a rule, is the build's repository URL (or its `/tree/…` link) or lives under the canonical site URL. */
+export function isAllowedUrl(url: string, rules: UrlRule[], repoUrl: string | null, siteUrl: string | null = null): boolean {
+  if (siteUrl && url.startsWith(siteUrl)) return true
   if (repoUrl && (url === repoUrl || url.startsWith(`${repoUrl}/tree/`))) return true
   return rules.some((rule) => matchesRule(url, rule))
 }
@@ -51,12 +52,13 @@ function main(): number {
   // Same environment the production build sees (see vite.config.ts).
   const env = { ...loadEnv('production', cwd, ''), ...process.env }
   const { repoUrl } = resolveBuildInfo(env, gitFromCli())
+  const siteUrl = canonicalUrl(resolveSiteUrl(env, repoUrl), resolveBase(env.VITE_BASE))
 
   const violations: string[] = []
   for (const file of files) {
     const urls = new Set(findUrls(readFileSync(file, 'latin1')))
     for (const url of urls) {
-      if (!isAllowedUrl(url, rules, repoUrl)) violations.push(`${relative(cwd, file)}: ${url}`)
+      if (!isAllowedUrl(url, rules, repoUrl, siteUrl)) violations.push(`${relative(cwd, file)}: ${url}`)
     }
   }
 

@@ -118,3 +118,36 @@ export function resolveBase(raw: string | undefined): string {
   }
   return segments.length ? `/${segments.join('/')}/` : '/'
 }
+
+const GITHUB_OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/
+
+/** Origin (`https://host`, sin path) de un valor tipo URL; null si no es https válido. */
+function normalizeOrigin(raw: string | null | undefined): string | null {
+  const value = raw?.trim()
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && url.hostname ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Origin público del sitio (sin path ni barra final) del que salen canonical, `og:url`,
+ * `og:image` y el enlace de «Compartir DNI Print». Nunca se escribe a mano en el HTML.
+ * VITE_SITE_URL → `https://<owner>.github.io` (GITHUB_REPOSITORY_OWNER o dueño del repo en github.com) → null.
+ */
+export function resolveSiteUrl(env: BuildEnv, repoUrl: string | null): string | null {
+  const explicit = normalizeOrigin(env.VITE_SITE_URL)
+  if (explicit) return explicit
+  const owner = env.GITHUB_REPOSITORY_OWNER?.trim()
+  if (owner && GITHUB_OWNER.test(owner)) return `https://${owner.toLowerCase()}.github.io`
+  const match = repoUrl ? /^https:\/\/github\.com\/([^/]+)\//.exec(repoUrl) : null
+  return match && GITHUB_OWNER.test(match[1]) ? `https://${match[1].toLowerCase()}.github.io` : null
+}
+
+/** URL canónica de la app: origin del sitio + `base` de Vite (siempre con barra final). */
+export function canonicalUrl(siteUrl: string | null, base: string): string | null {
+  return siteUrl ? `${siteUrl}${base}` : null
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRepoUrl, resolveBase, resolveBuildInfo, type GitInfo } from '../../scripts/build-info.ts'
+import { canonicalUrl, normalizeRepoUrl, resolveBase, resolveBuildInfo, resolveSiteUrl, type GitInfo } from '../../scripts/build-info.ts'
 import { currentSourceCodeUrl, sourceCodeUrl } from '../../src/ui/source-link.ts'
 
 const SHA = '0123456789abcdef0123456789abcdef01234567'
@@ -125,5 +125,24 @@ describe('resolveBase', () => {
     for (const raw of ['https://x.github.io/r/', './', '/a b/', '/../x/', '/a?b', '/a#b', '.', '/a/./b/']) {
       expect(() => resolveBase(raw), raw).toThrow(/^VITE_BASE inválido: /)
     }
+  })
+})
+
+
+describe('resolveSiteUrl / canonicalUrl', () => {
+  it('prefiere VITE_SITE_URL y se queda con el origin', () => {
+    expect(resolveSiteUrl({ VITE_SITE_URL: 'https://dni.example.com/algo/' }, null)).toBe('https://dni.example.com')
+  })
+  it('ignora valores no https', () => {
+    expect(resolveSiteUrl({ VITE_SITE_URL: 'http://dni.example.com' }, null)).toBeNull()
+  })
+  it('deriva GitHub Pages del dueño del repo', () => {
+    expect(resolveSiteUrl({ GITHUB_REPOSITORY_OWNER: 'Dueno' }, null)).toBe('https://dueno.github.io')
+    expect(resolveSiteUrl({}, 'https://github.com/Dueno/dni-print')).toBe('https://dueno.github.io')
+    expect(resolveSiteUrl({}, 'https://gitlab.com/x/y')).toBeNull()
+  })
+  it('canonicalUrl suma la base', () => {
+    expect(canonicalUrl('https://a.github.io', '/dni-print/')).toBe('https://a.github.io/dni-print/')
+    expect(canonicalUrl(null, '/')).toBeNull()
   })
 })

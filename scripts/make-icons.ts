@@ -1,6 +1,6 @@
 // Genera los íconos de la marca (identity.md) en public/: favicon.svg y los PNG.
 // Reproducible: `npm run make:icons`. Rasteriza con Chromium de Playwright (devDependency); no suma dependencias de runtime.
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { chromium } from '@playwright/test'
 
@@ -42,6 +42,36 @@ export function iconSvg(lado: number, opts: { fondo: string | null; radio: numbe
 <svg x="${off}" y="${off}" width="${marcaPx}" height="${marcaPx}" viewBox="0 0 64 64">${marca(opts.esquinas)}</svg></svg>`
 }
 
+/** Tope de peso de og-image.png (compartir-y-seo.md). */
+export const OG_MAX_BYTES = 300 * 1024
+
+/** Tarjeta ilustrada (nunca un DNI real): foto de silueta y renglones genéricos. */
+function tarjetaIlustrada(x: number, y: number, rot: number): string {
+  return `<g transform="translate(${x} ${y}) rotate(${rot})">
+<rect width="340" height="214" rx="16" fill="#fff" stroke="#D5DCE2" stroke-width="2"/>
+<rect x="0" y="0" width="340" height="40" rx="16" fill="${CELESTE}"/><rect x="0" y="24" width="340" height="16" fill="${CELESTE}"/>
+<circle cx="34" cy="20" r="7" fill="${SOL}"/>
+<rect x="24" y="64" width="90" height="116" rx="8" fill="#E3EAF0"/>
+<circle cx="69" cy="104" r="20" fill="#B9C6D2"/><path d="M33 180c0-24 16-38 36-38s36 14 36 38z" fill="#B9C6D2"/>
+<rect x="136" y="72" width="170" height="12" rx="6" fill="#C9D3DC"/><rect x="136" y="100" width="130" height="12" rx="6" fill="#DCE3E9"/>
+<rect x="136" y="128" width="150" height="12" rx="6" fill="#DCE3E9"/><rect x="136" y="156" width="90" height="12" rx="6" fill="#DCE3E9"/>
+</g>`
+}
+
+/** HTML de la vista previa del enlace: 1200 × 630, marca grande, wordmark, bajada y hoja A4 con dos tarjetas ilustradas. */
+export function ogImageHtml(fuente: string): string {
+  return `<style>@font-face{font-family:FG;font-weight:700;src:url(data:font/woff2;base64,${fuente})}
+html,body{margin:0}body{width:1200px;height:630px;background:${FONDO_OSCURO};overflow:hidden;position:relative;font-family:FG,sans-serif}
+.m{position:absolute;left:72px;top:92px}.w{position:absolute;left:72px;top:300px;font-size:92px;font-weight:700;color:#fff;line-height:1}
+.w span{color:${CELESTE}}.b{position:absolute;left:72px;top:420px;font-size:44px;font-weight:700;color:${SOL};line-height:1.15}
+.s{position:absolute;left:72px;top:500px;font-size:28px;color:#B9C6D2;font-family:sans-serif}</style>
+<div class="m">${iconSvg(180, { fondo: null, radio: 0, esquinas: CELESTE })}</div>
+<div class="w">DNI <span>Print</span></div><div class="b">Tu DNI, a tamaño real.</div><div class="s">Sin cuentas. Sin subir fotos.</div>
+<svg style="position:absolute;left:660px;top:36px;overflow:visible" width="480" height="560" viewBox="0 0 480 560">
+<rect x="0" y="0" width="480" height="560" rx="10" fill="#fff" transform="rotate(3 240 280)"/>
+<g transform="rotate(3 240 280)">${tarjetaIlustrada(70, 90, 0)}${tarjetaIlustrada(70, 330, 0)}</g></svg>`
+}
+
 const ICONOS = [
   // Pestaña: sin fondo, marca a todo el lado (no es un ícono de pantalla de inicio).
   { archivo: 'favicon-32.png', lado: 32, svg: () => faviconPlano(32) },
@@ -68,6 +98,14 @@ async function main(): Promise<void> {
       writeFileSync(join(out, icono.archivo), png)
       console.log(`${icono.archivo} ${icono.lado}x${icono.lado}`)
     }
+    const fuente = readFileSync(join(out, 'fonts', 'familjen-grotesk-latin-700-normal.woff2')).toString('base64')
+    await page.setViewportSize({ width: 1200, height: 630 })
+    await page.setContent(ogImageHtml(fuente))
+    await page.evaluate(() => document.fonts.ready)
+    const og = await page.screenshot({ clip: { x: 0, y: 0, width: 1200, height: 630 } })
+    if (og.length > OG_MAX_BYTES) throw new Error(`og-image.png pesa ${og.length} B (máximo ${OG_MAX_BYTES})`)
+    writeFileSync(join(out, 'og-image.png'), og)
+    console.log(`og-image.png 1200x630 ${og.length} B`)
   } finally {
     await browser.close()
   }

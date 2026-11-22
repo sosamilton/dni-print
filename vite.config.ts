@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
-import { gitFromCli, resolveBase, resolveBuildInfo } from './scripts/build-info.ts'
+import { canonicalUrl, gitFromCli, resolveBase, resolveBuildInfo, resolveSiteUrl } from './scripts/build-info.ts'
 
 const CSP_META = /[ \t]*<meta\b[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>\r?\n?/i
 
@@ -15,6 +15,24 @@ export function stripCspInDev(): Plugin {
     name: 'strip-csp-in-dev',
     apply: 'serve',
     transformIndexHtml: (html) => html.replace(CSP_META, ''),
+  }
+}
+
+const SHARE_TAG_LINE = /^[ \t]*<(?:meta|link)\b[^>]*%(?:CANONICAL_URL|OG_IMAGE_URL)%[^>]*>\r?\n?/gm
+
+/**
+ * Rellena las etiquetas de vista previa de `index.html` con la URL canónica del build
+ * (`%CANONICAL_URL%`, `%OG_IMAGE_URL%`). Sin sitio conocido quita esas etiquetas (nunca queda una URL inventada).
+ */
+export function sharePreview(canonical: string | null): Plugin {
+  return {
+    name: 'share-preview',
+    transformIndexHtml: (html) => {
+      if (!canonical) return html.replace(SHARE_TAG_LINE, '')
+      return html
+        .replaceAll('%CANONICAL_URL%', canonical)
+        .replaceAll('%OG_IMAGE_URL%', `${canonical}og-image.png`)
+    },
   }
 }
 
@@ -68,6 +86,8 @@ export default defineConfig(({ mode }) => {
   }
   const base = resolveBase(env.VITE_BASE)
   const buildInfo = resolveBuildInfo(env, gitFromCli())
+  const siteUrl = canonicalUrl(resolveSiteUrl(env, buildInfo.repoUrl), base)
+  if (!siteUrl) console.warn('[build-info] sin URL del sitio (VITE_SITE_URL): el HTML no lleva og:url ni og:image')
   console.info(`[build-info] sha=${buildInfo.sha ?? 'none'} repoUrl=${buildInfo.repoUrl ?? 'none'} base=${base}`)
 
   return {
@@ -80,6 +100,7 @@ export default defineConfig(({ mode }) => {
       stripCspInDev(),
       engineCsp(engineId),
       stubScanicMl(),
+      sharePreview(siteUrl),
       VitePWA({
         strategies: 'generateSW',
         registerType: 'prompt',
@@ -103,6 +124,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,wasm,svg,png,ico,woff2}'],
+          globIgnores: ['og-image.png'],
           ...precacheOptions(engineId),
         },
       }),
@@ -111,6 +133,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __COMMIT_SHA__: JSON.stringify(buildInfo.sha),
       __REPO_URL__: JSON.stringify(buildInfo.repoUrl),
+      __SITE_URL__: JSON.stringify(siteUrl),
     },
     test: {
       include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
