@@ -66,3 +66,33 @@ test('sin showDirectoryPicker: explicación y descarga normal', async ({ page })
   const [download] = await Promise.all([page.waitForEvent('download'), card(page, output.options.save.title.pdf).click()])
   expect(download.suggestedFilename()).toMatch(/\.pdf$/)
 })
+
+test('con carpeta elegida en línea, mandar escribe ahí una sola vez, sin descargar, y el aviso nombra la carpeta', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'OPFS como carpeta simulada, solo chromium')
+  await page.addInitScript(() => {
+    ;(window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = async () => {
+      const root = await navigator.storage.getDirectory()
+      return root.getDirectoryHandle('Imprentas', { create: true })
+    }
+  })
+  let downloads = 0
+  page.on('download', () => downloads++)
+  await page.goto('./')
+  await toPrint(page)
+  await page.getByRole('button', { name: output.send.chooseFolder }).first().click()
+  await expect(page.getByRole('button', { name: output.send.chooseFolder })).toHaveCount(0)
+  await page.getByLabel(output.desktop.emailLabel).fill('a@b.com')
+  for (let i = 0; i < 2; i++) {
+    const [mail] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: output.desktop.sendMail }).click()])
+    expect(mail).toBeTruthy()
+  }
+  await expect(page.getByRole('status').filter({ hasText: `Guardamos` }).filter({ hasText: output.send.folderPlace('Imprentas') })).toBeVisible()
+  expect(downloads).toBe(0)
+  const count = await page.evaluate(async () => {
+    const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('Imprentas')
+    let n = 0
+    for await (const _ of (dir as unknown as { entries(): AsyncIterable<unknown> }).entries()) n++
+    return n
+  })
+  expect(count).toBe(1)
+})

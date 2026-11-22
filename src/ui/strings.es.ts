@@ -202,7 +202,11 @@ export const strings = {
       'Elegí Imprimir, o guardalo en otra app.',
     ],
     send: {
-      attachHint: 'Abrí Descargas, copiá el PDF con Ctrl+C y pegalo con Ctrl+V en el chat o el mail. También podés arrastrarlo.',
+      attachHint: (file: string, place: string) =>
+        `Guardamos ${file} en ${place}. Copialo con Ctrl+C y pegalo con Ctrl+V en el chat o el mail. También podés arrastrarlo.`,
+      downloads: 'Descargas',
+      folderPlace: (name: string) => `la carpeta «${name}»`,
+      chooseFolder: 'Elegir carpeta',
       whatsappButton: 'Enviar por WhatsApp',
     },
     whatsapp: {

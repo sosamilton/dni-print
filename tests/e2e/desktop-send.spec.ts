@@ -31,7 +31,7 @@ test('sin Web Share Mandar arranca abierta, sus botones abren Gmail y WhatsApp W
   await toPrint(page)
   await expect(page.getByRole('button', { name: d.sendMail })).toBeVisible()
   await expect(page.getByRole('button', { name: send.whatsappButton })).toBeVisible()
-  await expect(page.getByText(send.attachHint)).toHaveCount(0)
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toHaveCount(0)
   await expect(page.getByRole('button', { name: d.useMailProgram })).toBeVisible()
 
   await page.getByLabel(d.emailLabel).fill('mal')
@@ -51,8 +51,8 @@ test('sin Web Share Mandar arranca abierta, sus botones abren Gmail y WhatsApp W
   const requests = guard.externalRequests()
   expect(requests.some((u) => u.startsWith('https://mail.google.com/mail/?view=cm&fs=1&to=imprenta%40ejemplo.com'))).toBe(true)
   expect(requests).toContain(`https://web.whatsapp.com/send?phone=5491123456789&text=${encodeURIComponent(wa.message)}`)
-  expect(downloads).toBe(2)
-  await expect(page.getByText(send.attachHint)).toBeVisible()
+  expect(downloads).toBe(1)
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toBeVisible()
 })
 
 test('sin Web Share, «Usar mi programa de correo» descarga el PDF y muestra la indicación', async ({ page }) => {
@@ -62,7 +62,7 @@ test('sin Web Share, «Usar mi programa de correo» descarga el PDF y muestra la
   await expect(button).toBeEnabled()
   const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
   expect(download.suggestedFilename()).toMatch(/\.pdf$/)
-  await expect(page.getByText(send.attachHint)).toBeVisible()
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toBeVisible()
 })
 
 test('con Web Share, mandar abre el enlace sin descargar ni indicación', async ({ page }) => {
@@ -76,7 +76,7 @@ test('con Web Share, mandar abre el enlace sin descargar ni indicación', async 
   const [chat] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: send.whatsappButton }).click()])
   expect(chat).toBeTruthy()
   expect(downloads).toBe(0)
-  await expect(page.getByText(send.attachHint)).toHaveCount(0)
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toHaveCount(0)
 })
 
 test('con Web Share en escritorio aparece Compartir, Imprimir sigue resaltada y Mandar queda cerrada', async ({ page }) => {
@@ -99,4 +99,18 @@ test('Empezar de nuevo vacía el correo', async ({ page }) => {
   await page.getByRole('button', { name: output.restart, exact: true }).click()
   await toPrint(page)
   await expect(page.getByLabel(d.emailLabel)).toHaveValue('')
+})
+
+test('sin Web Share, Guardar y luego mandar descarga una sola vez', async ({ page }) => {
+  let downloads = 0
+  page.on('download', () => downloads++)
+  await page.goto('./')
+  await toPrint(page)
+  await savePdf(page)
+  await page.getByRole('button', { name: output.another }).click()
+  await page.getByLabel(d.emailLabel).fill('a@b.com')
+  const [mail] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: d.sendMail }).click()])
+  expect(mail).toBeTruthy()
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toBeVisible()
+  expect(downloads).toBe(1)
 })

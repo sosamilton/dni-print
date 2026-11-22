@@ -68,7 +68,7 @@ test('muestra el campo, rechaza un número inválido y abre WhatsApp Web con uno
   expect(popup).toBeTruthy()
   await expect(page.getByRole('alert')).toHaveCount(0)
   expect(downloads).toBe(0)
-  await expect(page.getByText(output.send.attachHint)).toHaveCount(0)
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toHaveCount(0)
   const expected = `https://web.whatsapp.com/send?phone=5491123456789&text=${encodeURIComponent(wa.message)}`
   await expect.poll(() => guard.externalRequests()).toEqual([expected])
 })
@@ -96,7 +96,7 @@ test('sin Web Share, mandar a un número descarga el PDF, abre WhatsApp y muestr
   const [popup, download] = await Promise.all([page.waitForEvent('popup'), page.waitForEvent('download'), submit.click()])
   expect(popup).toBeTruthy()
   expect(download.suggestedFilename()).toMatch(/\.pdf$/)
-  await expect(page.getByText(output.send.attachHint)).toBeVisible()
+  await expect(page.getByText(/Guardamos .* en Descargas/)).toBeVisible()
 })
 
 test('el número y el mail guardados en preferencias prellenan los campos, editables', async ({ page }) => {

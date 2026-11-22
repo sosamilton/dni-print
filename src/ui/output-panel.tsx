@@ -21,7 +21,7 @@ import { gmailUrl, mailtoUrl, validateEmail } from './send-links.ts'
 import { planOutput, planSend, whatsappLink, type OutputOption, type OutputPlan, type SendPlan } from './send-plan.ts'
 import { sessionStore, useSession } from './session-store.ts'
 import { readPrefs } from './preferences-store.ts'
-import { loadFolder, supportsFolderPicker, writePdfToFolder, type FolderHandle } from './save-folder.ts'
+import { loadFolder, pickFolder, supportsFolderPicker, writePdfToFolder, type FolderHandle } from './save-folder.ts'
 import { currentShareNavigator, pdfFile, pdfFileName, sharePdf } from './share-pdf.ts'
 import { strings } from './strings.es.ts'
 import { useWideLayout } from './use-wide-layout.ts'
@@ -346,9 +346,7 @@ function OutputOptions({
     })
   })
   // Downloads the current PDF; must run inside a click.
-  function downloadPdf(): boolean {
-    const pdf = build.pdf
-    if (!pdf) return false
+  function downloadPdf(pdf: { bytes: Uint8Array; copies: 1 | 2 }): void {
     const store = sessionStore.getState()
     const url = store.createPdfUrl(pdf.bytes)
     const link = document.createElement('a')
@@ -358,20 +356,35 @@ function OutputOptions({
     link.click()
     link.remove()
     setTimeout(() => sessionStore.getState().releaseUrl(url), RELEASE_URL_MS)
-    return true
+  }
+  // In-memory only: the version (its bytes) already saved, so Save and Send never repeat it.
+  const savedRef = useRef(null as { bytes: Uint8Array; place: Promise<string> } | null)
+  /** Saves the current PDF once per version; starts inside the click. Resolves to where it went. */
+  function saveOnce(): Promise<string> | null {
+    const pdf = build.pdf
+    if (!pdf) return null
+    if (savedRef.current?.bytes === pdf.bytes) return savedRef.current.place
+    const name = pdfFileName(pdf.copies)
+    let place: Promise<string>
+    if (folder) {
+      // The permission call runs first, still inside the click's user activation.
+      place = writePdfToFolder(folder, pdf.bytes, name).then((ok) => {
+        if (ok) return strings.output.send.folderPlace(folder.name)
+        downloadPdf(pdf)
+        return strings.output.send.downloads
+      })
+    } else {
+      downloadPdf(pdf)
+      place = Promise.resolve(strings.output.send.downloads)
+    }
+    savedRef.current = { bytes: pdf.bytes, place }
+    return place
   }
   const onSave = act(() => {
-    const pdf = build.pdf
-    if (folder && pdf) {
-      // The permission call runs first, still inside the click's user activation.
-      void writePdfToFolder(folder, pdf.bytes, pdfFileName(pdf.copies)).then((ok) => {
-        if (ok) setAfter('saved')
-        else if (downloadPdf()) setAfter('saved')
-      })
-      return
-    }
-    if (downloadPdf()) setAfter('saved')
+    void saveOnce()?.then(() => setAfter('saved'))
   })
+  const choose = () => void pickFolder().then((handle) => handle && setFolder(handle))
+  const canChoose = supportsFolderPicker() && !folder
 
   if (after) {
     return (
@@ -422,7 +435,7 @@ function OutputOptions({
       )}
       {plan.options.map((option) => {
         if (option === 'send') {
-          return <SendOption key={option} plan={plan} sendPlan={sendPlan} ready={ready} download={downloadPdf} />
+          return <SendOption key={option} plan={plan} sendPlan={sendPlan} ready={ready} save={saveOnce} chooseFolder={canChoose ? choose : undefined} />
         }
         const card = cards[option]
         return (
@@ -445,6 +458,11 @@ function OutputOptions({
               <p className={printNote === 'failed' ? 'print-error' : 'print-notice hint'} role={printNote === 'failed' ? 'alert' : 'status'}>
                 {printNote === 'failed' ? strings.output.printFailed : printNote === 'opened' ? strings.output.printOpened : strings.output.printUnavailable}
               </p>
+            )}
+            {option === 'save' && canChoose && (
+              <button type="button" className="link-button" onClick={choose}>
+                {strings.output.send.chooseFolder}
+              </button>
             )}
             {option === 'save' && ios && <IosGuide />}
           </div>
@@ -514,7 +532,7 @@ function IosGuide() {
 }
 
 /** «Mandar a un número de WhatsApp o un mail»: a disclosure card with the number and mail fields. */
-function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sendPlan: SendPlan; ready: boolean; download: () => boolean }) {
+function SendOption({ plan, sendPlan, ready, save, chooseFolder }: { plan: OutputPlan; sendPlan: SendPlan; ready: boolean; save: () => Promise<string> | null; chooseFolder?: () => void }) {
   const t = strings.output.whatsapp
   const d = strings.output.desktop
   const s = strings.output.send
@@ -525,7 +543,7 @@ function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sen
   const number = useSession((st) => st.whatsappNumber)
   const setNumber = useSession((st) => st.setWhatsappNumber)
   const [error, setError] = useState(null as 'empty' | 'invalid' | null)
-  const [hint, setHint] = useState(false)
+  const [hint, setHint] = useState(null as { file: string; place: string } | null)
   const id = useId()
   const emailId = `${id}-email`
   const inputId = `${id}-number`
@@ -537,9 +555,11 @@ function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sen
   function beforeOpen() {
     if (!ready) return false
     if (!sendPlan.share) {
-      if (!download()) return false
-      setHint(true)
-    } else setHint(false)
+      const saving = save()
+      if (!saving) return false
+      const file = pdfFileName(sessionStore.getState().pdf?.copies ?? 1)
+      void saving.then((place) => setHint({ file, place }))
+    } else setHint(null)
     return true
   }
 
@@ -547,7 +567,7 @@ function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sen
     const phone = normalizeArPhone(number)
     if (!phone.ok) {
       setError(phone.reason)
-      setHint(false)
+      setHint(null)
       return
     }
     setError(null)
@@ -559,7 +579,7 @@ function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sen
     const valid = validateEmail(email)
     if (!valid.ok) {
       setEmailError(true)
-      setHint(false)
+      setHint(null)
       return
     }
     setEmailError(false)
@@ -644,8 +664,13 @@ function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sen
         )}
         {hint && (
           <p className="print-notice whatsapp-hint" role="status">
-            {s.attachHint}
+            {s.attachHint(hint.file, hint.place)}
           </p>
+        )}
+        {chooseFolder && (
+          <button type="button" className="link-button" onClick={chooseFolder}>
+            {s.chooseFolder}
+          </button>
         )}
       </div>
     </details>
