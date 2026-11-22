@@ -43,8 +43,9 @@ export async function savePdf(page: Page, title: string = output.options.save.ti
  */
 export async function holdPdfBuilds(page: Page) {
   await page.addInitScript(() => {
-    const w = window as unknown as { __holdPdf: boolean; __heldPdf: (() => void)[]; __releasePdf: () => void }
+    const w = window as unknown as { __holdPdf: boolean; __failPdf: boolean; __heldPdf: (() => void)[]; __releasePdf: () => void }
     w.__holdPdf = false
+    w.__failPdf = false
     w.__heldPdf = []
     const post = Worker.prototype.postMessage
     Worker.prototype.postMessage = function (this: Worker, ...args: Parameters<Worker['postMessage']>) {
@@ -52,6 +53,10 @@ export async function holdPdfBuilds(page: Page) {
       if (w.__holdPdf && Array.isArray(message?.path) && message.path[0] === 'buildPdf') {
         w.__heldPdf.push(() => post.apply(this, args))
         return
+      }
+      if (w.__failPdf && Array.isArray(message?.path) && message.path[0] === 'buildPdf') {
+        // A path the worker does not expose makes Comlink reject the call.
+        args[0] = { ...(message as object), path: ['noExisteBuildPdf'] }
       }
       post.apply(this, args)
     } as Worker['postMessage']
@@ -68,3 +73,9 @@ export const setHoldPdf = (page: Page, hold: boolean) =>
     if (h) w.__holdPdf = true
     else w.__releasePdf()
   }, hold)
+
+/** Makes every later `buildPdf` fail in the worker (needs `holdPdfBuilds` before `page.goto`). */
+export const setFailPdf = (page: Page, fail: boolean) =>
+  page.evaluate((f) => {
+    ;(window as unknown as { __failPdf: boolean }).__failPdf = f
+  }, fail)

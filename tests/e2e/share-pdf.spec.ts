@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
-import { card, holdPdfBuilds, openSheet, outputSheet, setHoldPdf, toPrint } from './output.ts'
+import { card, holdPdfBuilds, openSheet, outputSheet, setFailPdf, setHoldPdf, toPrint } from './output.ts'
 
 const { steps, output, printStep } = strings
 const o = output.options
@@ -130,4 +130,22 @@ test('Guardar en el teléfono descarga el PDF desde la hoja', async ({ page }) =
   expect(download.suggestedFilename()).toBe('dni-print-2-copias.pdf')
   await expect(outputSheet(page).getByText(output.after.saved)).toBeVisible()
   expect(steps.print.primary).toBe('Está bien')
+})
+
+test('si el armado del PDF falla aparece la alerta y «Probá de nuevo» rearma las opciones', async ({ page }) => {
+  await holdPdfBuilds(page)
+  await page.goto('./')
+  await toPrint(page)
+  let sheet = await openSheet(page)
+  await expect(card(page, o.save.title.pdf)).toBeEnabled()
+  await page.keyboard.press('Escape')
+
+  await setFailPdf(page, true)
+  await page.getByRole('button', { name: printStep.copies[1] }).click()
+  sheet = await openSheet(page)
+  await expect(sheet.getByRole('alert')).toContainText(output.buildFailed)
+  await expect(card(page, o.save.title.pdf)).toBeDisabled()
+  await setFailPdf(page, false)
+  await sheet.getByRole('button', { name: output.retry }).click()
+  await expect(card(page, o.save.title.pdf)).toBeEnabled()
 })
