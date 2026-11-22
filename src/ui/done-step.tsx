@@ -23,7 +23,7 @@ export function DoneStep() {
   }
 
   return (
-    <div className="print-step">
+    <div className="print-step done-step">
       <p className="print-notice">{strings.doneStep.instruction}</p>
       <p className="print-notice">{strings.steps.done.note}</p>
       {canShare && (

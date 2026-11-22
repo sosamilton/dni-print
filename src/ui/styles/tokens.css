@@ -124,13 +124,43 @@
   .print-step[data-layout='columns'] .sheet-preview { max-width: 100%; }
 }
 
+/* Desktop layout of the four steps (CAP-3). Literals (900px, 1120px) live here because media queries cannot read var(). */
 @media (min-width: 900px) {
-  .wizard:has(.print-step[data-layout='columns']) {
-    max-width: 1100px;
-  }
+  body .wizard { max-width: 1120px; }
+  body .wizard-header { display: grid; grid-template-columns: auto minmax(200px, 360px) 1fr auto; column-gap: var(--spacing-4); align-items: center; }
+  body .wizard-header-bar { display: contents; }
+  body .wizard-header-bar > .brand, body .wizard-header-bar > :first-child { grid-column: 1; grid-row: 1; }
+  body .wizard-progress { grid-column: 2; grid-row: 1; margin-top: 0; }
+  body .wizard-step-labels { grid-column: 2; grid-row: 2; }
+  body .wizard-counter { grid-column: 3; grid-row: 1; margin: 0; }
+  body .wizard-header .app-menu { grid-column: 4; grid-row: 1; }
+  body .wizard-update { grid-column: 3; grid-row: 2; }
+  body .wizard-back-row { grid-column: 1; grid-row: 2; }
+  body .wizard-title { grid-column: 1 / -1; grid-row: 3; }
+  body .wizard-header > .visually-hidden { grid-row: 4; }
 
-  .wizard:has(.print-step[data-layout='columns']) .wizard-footer .button-primary {
-    max-width: var(--column-max);
-    margin-left: auto;
-  }
+  body .wizard-footer .button-primary { max-width: var(--column-max); margin-left: auto; }
+  body .load-step { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: var(--spacing-4); }
+  body .load-field, body .load-privacy { grid-column: 1 / -1; }
+
+  body .crop-step { display: grid; grid-template-columns: minmax(0, var(--column-max)) 1fr; align-items: start; column-gap: var(--spacing-5); row-gap: var(--spacing-3); }
+  body .crop-step > * { grid-column: 1; }
+  body .crop-step > .crop-result { grid-column: 2; grid-row: 1 / span 8; justify-self: start; }
+  body .crop-step > .corner-editor, body .crop-step > [data-corner-editor] { grid-column: 1; }
+
+  body .done-step { display: grid; grid-template-columns: 1fr 1fr; align-items: start; column-gap: var(--spacing-5); row-gap: var(--spacing-3); }
+  body .done-step > * { grid-column: 2; }
+  body .done-step > .print-notice { grid-column: 1; }
+
+  /* Step 3: the primary button leaves the sticky footer and sits in the options column. */
+  body .wizard:has(.print-step[data-layout='columns']) { display: grid; grid-template-columns: 3fr 2fr; grid-template-rows: auto 1fr auto; column-gap: var(--spacing-5); }
+  body .wizard:has(.print-step[data-layout='columns']) .wizard-header { grid-column: 1 / -1; grid-row: 1; }
+  body .wizard:has(.print-step[data-layout='columns']) .wizard-body,
+  body .wizard:has(.print-step[data-layout='columns']) .print-step,
+  body .wizard:has(.print-step[data-layout='columns']) .print-columns { display: contents; }
+  body .wizard:has(.print-step[data-layout='columns']) .print-preview { grid-column: 1; grid-row: 2 / span 2; align-self: start; margin: var(--spacing-4) 0; }
+  body .wizard:has(.print-step[data-layout='columns']) .print-options { grid-column: 2; grid-row: 2 / span 2; margin: var(--spacing-4) 0; padding-bottom: calc(var(--button-min-height) + var(--spacing-5)); }
+  body .wizard:has(.print-step[data-layout='columns']) .wizard-footer { grid-column: 2; grid-row: 3; position: static; align-self: end; z-index: 1; padding: 0 0 var(--spacing-4); background: transparent; }
+  body .wizard:has(.print-step[data-layout='columns']) .wizard-footer .button-primary { max-width: none; margin-left: 0; }
+  body .wizard:has(.print-step[data-layout='columns']) .sheet-preview { max-height: 70vh; width: auto; max-width: 100%; }
 }
