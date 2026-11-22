@@ -1,12 +1,43 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { strings } from '../../src/ui/strings.es.ts'
-import { pngFile } from './fixtures.ts'
+import { pngFile, sharpSceneFile } from './fixtures.ts'
 import { card } from './output.ts'
 
 const { steps, output } = strings
 
 test.use({ viewport: { width: 1280, height: 800 } })
+
+for (const vp of [{ width: 1280, height: 800 }, { width: 1440, height: 900 }]) {
+  test(`pasos 1 y 2 a ${vp.width}x${vp.height}: miniaturas a ancho de tarjeta y acción centrada`, async ({ page }) => {
+    await page.setViewportSize(vp)
+    await page.goto('./')
+    await page.getByTestId('front-gallery').setInputFiles(sharpSceneFile())
+    await page.getByTestId('back-gallery').setInputFiles(sharpSceneFile())
+    const check = async (name: string) => {
+      await layoutOk(page)
+      const btn = page.getByRole('button', { name, exact: true })
+      await expect(btn).toBeInViewport({ ratio: 1 })
+      const b = (await btn.boundingBox())!
+      const w = (await page.locator('.wizard').boundingBox())!
+      expect(Math.abs(b.x + b.width / 2 - (w.x + w.width / 2))).toBeLessThanOrEqual(2)
+      await expect(page.locator('.wizard-footer')).toHaveCSS('position', 'static')
+    }
+    await expect(page.locator('.face-thumb:not(.face-thumb-loading)')).toHaveCount(2)
+    const thumbs = await page.locator('.face-thumb').evaluateAll((els) => els.map((e) => {
+      const r = e.getBoundingClientRect(), c = e.closest('.face-slot')!.getBoundingClientRect()
+      return { ratio: r.width / r.height, fill: r.width / c.width }
+    }))
+    expect(thumbs.length).toBe(2)
+    for (const t of thumbs) {
+      expect(Math.abs(t.ratio - 1.586)).toBeLessThan(0.05)
+      expect(t.fill).toBeGreaterThan(0.8)
+    }
+    await check(steps.load.primary)
+    await page.getByRole('button', { name: steps.load.primary, exact: true }).click()
+    await check(steps.crop.primary)
+  })
+}
 
 async function layoutOk(page: Page) {
   const m = await page.evaluate(() => ({

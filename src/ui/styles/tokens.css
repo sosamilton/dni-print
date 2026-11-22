@@ -169,8 +169,11 @@
   body .wizard-title { grid-column: 1 / -1; grid-row: 3; }
   body .wizard-header > .visually-hidden { grid-row: 4; }
 
-  body .wizard-footer .button-primary { max-width: var(--column-max); margin-left: auto; }
-  body .load-step { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: var(--spacing-4); }
+  body .wizard-footer { position: static; display: flex; justify-content: center; padding: var(--spacing-2) 0 var(--spacing-3); }
+  body .wizard-footer .button-primary { width: 100%; max-width: var(--column-max); margin: 0 auto; }
+  body .face-area { flex-direction: column; align-items: stretch; }
+  body .face-thumb, body .face-placeholder { width: 100%; }
+  body .load-step { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: var(--spacing-3); padding-bottom: 0; }
   body .load-field, body .load-privacy { grid-column: 1 / -1; }
 
   body .crop-step { display: grid; grid-template-columns: minmax(0, var(--column-max)) 1fr; align-items: start; column-gap: var(--spacing-5); row-gap: var(--spacing-3); }
