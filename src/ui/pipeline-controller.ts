@@ -82,9 +82,12 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
     async setQuad(faceId: FaceId, quad: Quad): Promise<void> {
       const token = ++quadToken[faceId]
       const session = ingestToken[faceId]
+      // Commit the quad before asking the worker: fast key presses must build on the previous one.
+      let rev = store.getState().setQuad(faceId, quad)
+      if (rev === null) return
       const before = store.getState().faces[faceId]
-      let rotation: Rotation | undefined
       if (before && !before.rotationTouched) {
+        let rotation: Rotation | undefined
         // Marking the corners by hand also straightens the face, unless the user already chose a rotation.
         try {
           const oriented = await api.get().orient(faceId, quad, store.getState().profileId)
@@ -94,9 +97,9 @@ export function createPipelineController({ api, store = sessionStore }: Pipeline
         }
         if (token !== quadToken[faceId] || store.getState().faces[faceId]?.rotationTouched) rotation = undefined
         if (token !== quadToken[faceId] || session !== ingestToken[faceId]) return
+        if (rotation !== undefined) rev = store.getState().setQuad(faceId, quad, rotation) ?? rev
       }
-      const rev = store.getState().setQuad(faceId, quad, rotation)
-      if (rev !== null) await render(faceId, rev)
+      await render(faceId, rev)
     },
     async setRotation(faceId: FaceId, rotation: Rotation): Promise<void> {
       const rev = store.getState().setRotation(faceId, rotation)

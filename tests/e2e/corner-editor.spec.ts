@@ -13,6 +13,8 @@ async function openCrop(page: Page) {
 
 const ok = (page: Page) => page.getByRole('button', { name: steps.crop.primary, exact: true })
 
+const left = (el: Element) => parseFloat(el.getAttribute('style')!.match(/left:\s*([\d.]+)/)![1])
+
 test('una cara por vez: frente, dorso y luego paso 3', async ({ page }) => {
   await openCrop(page)
   await expect(page.getByText(cropStep.faceCounter('Frente', 1, 2))).toBeVisible()
@@ -27,10 +29,13 @@ test('teclado: Tab, flechas y Shift+flechas mueven la esquina', async ({ page })
   await openCrop(page)
   const tl = page.getByRole('button', { name: cropStep.corners[0] })
   await tl.focus()
-  const x0 = await tl.evaluate((el) => parseFloat(el.getAttribute('style')!.match(/left:\s*([\d.]+)/)![1]))
+  const x0 = await tl.evaluate(left)
   await page.keyboard.press('Shift+ArrowRight')
-  const x1 = await tl.evaluate((el) => parseFloat(el.getAttribute('style')!.match(/left:\s*([\d.]+)/)![1]))
+  const x1 = await tl.evaluate(left)
   expect(x1).toBeGreaterThan(x0)
+  // Pulsaciones rápidas, sin esperar al worker: cada una parte del quad ya movido.
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+ArrowRight')
+  await expect.poll(() => tl.evaluate(left)).toBeCloseTo(x1 + 4 * (x1 - x0), 1)
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: cropStep.corners[1] })).toBeFocused()
 })
