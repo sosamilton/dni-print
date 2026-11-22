@@ -31,3 +31,5 @@
 .whatsapp-hint { font-size: var(--font-small-size); }
 .whatsapp-steps { margin: 0; padding-left: var(--spacing-4); }
 .whatsapp-panel[hidden] { display: none; }
+.desktop-send { display: grid; gap: var(--spacing-2); }
+.link-button { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; justify-self: start; font: inherit; }

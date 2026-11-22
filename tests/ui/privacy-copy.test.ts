@@ -22,4 +22,11 @@ describe('privacy menu copy', () => {
     expect(text).toMatch(/WhatsApp/)
     expect(text).toMatch(/lo decidís vos/)
   })
+
+  it('says sending by mail or WhatsApp Web goes through those services, not this app', () => {
+    const text = strings.privacyDialog.paragraphs.join(' ')
+    expect(text).toMatch(/mail/)
+    expect(text).toMatch(/WhatsApp Web/)
+    expect(text).toMatch(/no por esta app/)
+  })
 })

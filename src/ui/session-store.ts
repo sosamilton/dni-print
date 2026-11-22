@@ -41,6 +41,8 @@ export interface SessionState {
   pdf: { bytes: Uint8Array; copies: 1 | 2 } | null
   /** WhatsApp number as typed on the done step; memory only, cleared by clearSession. */
   whatsappNumber: string
+  /** Optional recipient email typed on the done step; memory only, cleared by clearSession. */
+  recipientEmail: string
 }
 
 export interface SessionActions {
@@ -75,6 +77,8 @@ export interface SessionActions {
   setPdf(bytes: Uint8Array, copies: 1 | 2): void
   /** Stores the WhatsApp number as typed (memory only). */
   setWhatsappNumber(text: string): void
+  /** Stores the recipient email as typed (memory only). */
+  setRecipientEmail(text: string): void
   clearSession(): void
 }
 
@@ -123,6 +127,7 @@ export function createSessionStore(deps: SessionDeps) {
       marginMm: DEFAULT_MARGIN_MM,
       pdf: null,
       whatsappNumber: '',
+      recipientEmail: '',
 
       bindWorker(fn) {
         clearWorker = fn
@@ -253,6 +258,9 @@ export function createSessionStore(deps: SessionDeps) {
       setWhatsappNumber(text) {
         set({ whatsappNumber: text })
       },
+      setRecipientEmail(text) {
+        set({ recipientEmail: text })
+      },
 
       clearSession() {
         const { faces, blobUrls } = get()
@@ -261,7 +269,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM, pdf: null, whatsappNumber: '' })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM, pdf: null, whatsappNumber: '', recipientEmail: '' })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

@@ -2,6 +2,7 @@ import { useId, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { currentNavigator, isIos } from './platform.ts'
 import { useSession } from './session-store.ts'
+import { gmailUrl, mailtoUrl, showDesktopSend, validateEmail, whatsappWebUrl } from './send-links.ts'
 import { canSharePdf, currentShareNavigator, pdfFile, sharePdf } from './share-pdf.ts'
 import { strings } from './strings.es.ts'
 import { normalizeArPhone, whatsappUrl } from './whatsapp.ts'
@@ -34,7 +35,7 @@ export function DoneStep() {
           {strings.doneStep.shareFailed}
         </p>
       )}
-      <WhatsappPanel canShare={canShare} />
+      <WhatsappPanel canShare={canShare} desktop={showDesktopSend(currentShareNavigator(), file)} />
       {ios && (
         <section className="ios-guide" aria-labelledby="ios-guide-title">
           <h2 id="ios-guide-title" className="ios-guide-title">
@@ -51,8 +52,13 @@ export function DoneStep() {
   )
 }
 
-function WhatsappPanel({ canShare }: { canShare: boolean }) {
+function WhatsappPanel({ canShare, desktop }: { canShare: boolean; desktop: boolean }) {
   const t = strings.doneStep.whatsapp
+  const d = strings.doneStep.desktop
+  const email = useSession((s) => s.recipientEmail)
+  const setEmail = useSession((s) => s.setRecipientEmail)
+  const [emailError, setEmailError] = useState(false)
+  const emailId = useId()
   const number = useSession((s) => s.whatsappNumber)
   const setNumber = useSession((s) => s.setWhatsappNumber)
   const [open, setOpen] = useState(false)
@@ -75,8 +81,67 @@ function WhatsappPanel({ canShare }: { canShare: boolean }) {
     window.open(whatsappUrl(phone.digits, t.message), '_blank', 'noopener,noreferrer')
   }
 
+  // The PDF was already downloaded to reach this step; these only open the user's mail / chat.
+  function sendMail(program: boolean) {
+    const valid = validateEmail(email)
+    if (!valid.ok) {
+      setEmailError(true)
+      return
+    }
+    setEmailError(false)
+    const url = program ? mailtoUrl(valid.email, d.mailSubject, d.mailBody) : gmailUrl(valid.email, d.mailSubject, d.mailBody)
+    if (program) window.location.href = url
+    else window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  function sendWhatsappWeb() {
+    const phone = normalizeArPhone(number)
+    if (!phone.ok) {
+      setOpen(true)
+      setError(phone.reason)
+      return
+    }
+    setError(null)
+    window.open(whatsappWebUrl(phone.digits, t.message), '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <>
+      {desktop && (
+        <section className="desktop-send">
+          <label htmlFor={emailId} className="whatsapp-label">
+            {d.emailLabel}
+          </label>
+          <input
+            id={emailId}
+            className="print-watermark-field"
+            type="email"
+            inputMode="email"
+            autoComplete="off"
+            value={email}
+            aria-invalid={emailError ? true : undefined}
+            onChange={(event) => {
+              setEmail(event.target.value)
+              setEmailError(false)
+            }}
+          />
+          {emailError && (
+            <p className="print-error" role="alert">
+              {d.emailInvalid}
+            </p>
+          )}
+          <button type="button" className="share-button" onClick={() => sendMail(false)}>
+            {d.sendMail}
+          </button>
+          <button type="button" className="share-button" onClick={sendWhatsappWeb}>
+            {d.sendWhatsappWeb}
+          </button>
+          <button type="button" className="link-button" onClick={() => sendMail(true)}>
+            {d.useMailProgram}
+          </button>
+          <p className="print-notice whatsapp-hint">{d.dragHint}</p>
+        </section>
+      )}
       <button
         type="button"
         className="share-button"
