@@ -171,7 +171,7 @@ export const strings = {
       'Elegí Imprimir, o guardalo en otra app.',
     ],
     send: {
-      attachHint: 'Para adjuntar el PDF, primero guardalo y después sumalo al mensaje.',
+      attachHint: 'Abrí Descargas, copiá el PDF con Ctrl+C y pegalo con Ctrl+V en el chat o el mail. También podés arrastrarlo.',
       whatsappButton: 'Enviar por WhatsApp',
     },
     whatsapp: {
@@ -186,7 +186,6 @@ export const strings = {
       emailInvalid: 'Revisá el correo: tiene que ser una dirección como nombre@ejemplo.com.',
       sendMail: 'Enviar por mail',
       useMailProgram: 'Usar mi programa de correo',
-      dragHint: 'También podés arrastrar el PDF guardado a la ventana del mensaje.',
       mailSubject: 'Documento para imprimir a tamaño real',
       mailBody: 'Hola, te paso un documento para imprimir a tamaño real.',
     },

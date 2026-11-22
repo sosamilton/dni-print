@@ -24,15 +24,14 @@ async function fakeShare(page: Page) {
 }
 
 
-test('sin Web Share Mandar arranca abierta, sus botones abren Gmail y WhatsApp Web y nada se descarga', async ({ page, guard }) => {
+test('sin Web Share Mandar arranca abierta, sus botones abren Gmail y WhatsApp Web descargan el PDF con la indicación', async ({ page, guard }) => {
   let downloads = 0
   page.on('download', () => downloads++)
   await page.goto('./')
   await toPrint(page)
   await expect(page.getByRole('button', { name: d.sendMail })).toBeVisible()
   await expect(page.getByRole('button', { name: send.whatsappButton })).toBeVisible()
-  await expect(page.getByText(d.dragHint)).toBeVisible()
-  await expect(page.getByText(send.attachHint)).toBeVisible()
+  await expect(page.getByText(send.attachHint)).toHaveCount(0)
   await expect(page.getByRole('button', { name: d.useMailProgram })).toBeVisible()
 
   await page.getByLabel(d.emailLabel).fill('mal')
@@ -52,7 +51,32 @@ test('sin Web Share Mandar arranca abierta, sus botones abren Gmail y WhatsApp W
   const requests = guard.externalRequests()
   expect(requests.some((u) => u.startsWith('https://mail.google.com/mail/?view=cm&fs=1&to=imprenta%40ejemplo.com'))).toBe(true)
   expect(requests).toContain(`https://web.whatsapp.com/send?phone=5491123456789&text=${encodeURIComponent(wa.message)}`)
+  expect(downloads).toBe(2)
+  await expect(page.getByText(send.attachHint)).toBeVisible()
+})
+
+test('sin Web Share, «Usar mi programa de correo» descarga el PDF y muestra la indicación', async ({ page }) => {
+  await page.goto('./')
+  await toPrint(page)
+  const button = page.getByRole('button', { name: d.useMailProgram })
+  await expect(button).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/)
+  await expect(page.getByText(send.attachHint)).toBeVisible()
+})
+
+test('con Web Share, mandar abre el enlace sin descargar ni indicación', async ({ page }) => {
+  await fakeShare(page)
+  let downloads = 0
+  page.on('download', () => downloads++)
+  await page.goto('./')
+  await toPrint(page)
+  await page.getByText(output.options.send.title).click()
+  await page.getByLabel(wa.label).fill('011 15 2345-6789')
+  const [chat] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: send.whatsappButton }).click()])
+  expect(chat).toBeTruthy()
   expect(downloads).toBe(0)
+  await expect(page.getByText(send.attachHint)).toHaveCount(0)
 })
 
 test('con Web Share en escritorio aparece Compartir, Imprimir sigue resaltada y Mandar queda cerrada', async ({ page }) => {

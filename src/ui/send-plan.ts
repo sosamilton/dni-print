@@ -14,8 +14,6 @@ export interface SendPlan {
   whatsapp: 'web' | 'wa.me'
   /** «Usar mi programa de correo» alternative (desktop). */
   mailProgram: boolean
-  /** Extra «drag the PDF» message (desktop). */
-  dragHint: boolean
   /** «Otras formas de enviar» starts open when there is no share row. */
   othersOpen: boolean
 }
@@ -23,7 +21,7 @@ export interface SendPlan {
 export function planSend(nav: NavigatorInfo & ShareNavigator, file: File | null): SendPlan {
   const share = file !== null && canSharePdf(nav, file)
   const desktop = isDesktop(nav)
-  return { share, whatsapp: desktop ? 'web' : 'wa.me', mailProgram: desktop, dragHint: desktop, othersOpen: !share }
+  return { share, whatsapp: desktop ? 'web' : 'wa.me', mailProgram: desktop, othersOpen: !share }
 }
 
 export function whatsappLink(plan: SendPlan, digits: string, text: string): string {

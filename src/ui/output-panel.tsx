@@ -334,9 +334,10 @@ function OutputOptions({
       else if (outcome === 'opened' || outcome === 'unavailable' || outcome === 'failed') setPrintNote(outcome)
     })
   })
-  const onSave = act(() => {
+  // Downloads the current PDF; must run inside a click.
+  function downloadPdf(): boolean {
     const pdf = build.pdf
-    if (!pdf) return
+    if (!pdf) return false
     const store = sessionStore.getState()
     const url = store.createPdfUrl(pdf.bytes)
     const link = document.createElement('a')
@@ -346,7 +347,10 @@ function OutputOptions({
     link.click()
     link.remove()
     setTimeout(() => sessionStore.getState().releaseUrl(url), RELEASE_URL_MS)
-    setAfter('saved')
+    return true
+  }
+  const onSave = act(() => {
+    if (downloadPdf()) setAfter('saved')
   })
 
   if (after) {
@@ -398,7 +402,7 @@ function OutputOptions({
       )}
       {plan.options.map((option) => {
         if (option === 'send') {
-          return <SendOption key={option} plan={plan} sendPlan={sendPlan} />
+          return <SendOption key={option} plan={plan} sendPlan={sendPlan} ready={ready} download={downloadPdf} />
         }
         const card = cards[option]
         return (
@@ -490,7 +494,7 @@ function IosGuide() {
 }
 
 /** «Mandar a un número de WhatsApp o un mail»: a disclosure card with the number and mail fields. */
-function SendOption({ plan, sendPlan }: { plan: OutputPlan; sendPlan: SendPlan }) {
+function SendOption({ plan, sendPlan, ready, download }: { plan: OutputPlan; sendPlan: SendPlan; ready: boolean; download: () => boolean }) {
   const t = strings.output.whatsapp
   const d = strings.output.desktop
   const s = strings.output.send
@@ -501,6 +505,7 @@ function SendOption({ plan, sendPlan }: { plan: OutputPlan; sendPlan: SendPlan }
   const number = useSession((st) => st.whatsappNumber)
   const setNumber = useSession((st) => st.setWhatsappNumber)
   const [error, setError] = useState(null as 'empty' | 'invalid' | null)
+  const [hint, setHint] = useState(false)
   const id = useId()
   const emailId = `${id}-email`
   const inputId = `${id}-number`
@@ -508,14 +513,25 @@ function SendOption({ plan, sendPlan }: { plan: OutputPlan; sendPlan: SendPlan }
   const errorId = `${id}-error`
 
   // Links open right here, inside the click, so the browser treats them as a user gesture.
-  // They only open the user's chat / mail with the text; nothing is downloaded.
+  // Without Web Share the PDF is saved first (inside the same click) so the user can paste it.
+  function beforeOpen() {
+    if (!ready) return false
+    if (!sendPlan.share) {
+      if (!download()) return false
+      setHint(true)
+    } else setHint(false)
+    return true
+  }
+
   function sendWhatsapp() {
     const phone = normalizeArPhone(number)
     if (!phone.ok) {
       setError(phone.reason)
+      setHint(false)
       return
     }
     setError(null)
+    if (!beforeOpen()) return
     window.open(whatsappLink(sendPlan, phone.digits, t.message), '_blank', 'noopener,noreferrer')
   }
 
@@ -523,9 +539,11 @@ function SendOption({ plan, sendPlan }: { plan: OutputPlan; sendPlan: SendPlan }
     const valid = validateEmail(email)
     if (!valid.ok) {
       setEmailError(true)
+      setHint(false)
       return
     }
     setEmailError(false)
+    if (!beforeOpen()) return
     const url = program ? mailtoUrl(valid.email, d.mailSubject, d.mailBody) : gmailUrl(valid.email, d.mailSubject, d.mailBody)
     if (program) window.location.href = url
     else window.open(url, '_blank', 'noopener,noreferrer')
@@ -569,7 +587,7 @@ function SendOption({ plan, sendPlan }: { plan: OutputPlan; sendPlan: SendPlan }
             {error === 'empty' ? t.empty : t.invalid}
           </p>
         )}
-        <button type="button" className="share-button" onClick={sendWhatsapp}>
+        <button type="button" className="share-button" disabled={!ready} onClick={sendWhatsapp}>
           {s.whatsappButton}
         </button>
         <label htmlFor={emailId} className="whatsapp-label">
@@ -596,16 +614,19 @@ function SendOption({ plan, sendPlan }: { plan: OutputPlan; sendPlan: SendPlan }
             {d.emailInvalid}
           </p>
         )}
-        <button type="button" className="share-button" onClick={() => sendMail(false)}>
+        <button type="button" className="share-button" disabled={!ready} onClick={() => sendMail(false)}>
           {d.sendMail}
         </button>
         {sendPlan.mailProgram && (
-          <button type="button" className="link-button" onClick={() => sendMail(true)}>
+          <button type="button" className="link-button" disabled={!ready} onClick={() => sendMail(true)}>
             {d.useMailProgram}
           </button>
         )}
-        <p className="print-notice whatsapp-hint">{s.attachHint}</p>
-        {sendPlan.dragHint && <p className="print-notice whatsapp-hint">{d.dragHint}</p>}
+        {hint && (
+          <p className="print-notice whatsapp-hint" role="status">
+            {s.attachHint}
+          </p>
+        )}
       </div>
     </details>
   )

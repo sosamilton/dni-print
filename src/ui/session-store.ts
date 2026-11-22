@@ -2,6 +2,7 @@
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 import { defaultQuad, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile, MAX_WATERMARK_CHARS } from '../core/index.ts'
+import { parsePrefs, PREFS_KEY } from './preferences.ts'
 import { clampMargin, DEFAULT_MARGIN_MM } from './print-step-model.ts'
 import type { FaceFilter, Quad, Rotation } from '../core/index.ts'
 import type { BitmapLike, FaceId, Size } from '../worker/api.ts'
@@ -23,6 +24,16 @@ export interface FaceState {
   rendered: BitmapLike | null
   /** Sharpness of `rendered`'s crop (see `measureSharpness`); null until a render is accepted. */
   sharpness: number | null
+}
+
+/** Valid WhatsApp / mail preferences, read from localStorage; empty when unavailable. */
+function prefilled(): { whatsappNumber: string; recipientEmail: string } {
+  try {
+    const prefs = parsePrefs(globalThis.localStorage?.getItem(PREFS_KEY))
+    return { whatsappNumber: prefs.whatsapp, recipientEmail: prefs.email }
+  } catch {
+    return { whatsappNumber: '', recipientEmail: '' }
+  }
 }
 
 export interface SessionState {
@@ -128,8 +139,7 @@ export function createSessionStore(deps: SessionDeps) {
       watermarkText: '',
       marginMm: DEFAULT_MARGIN_MM,
       pdf: null,
-      whatsappNumber: '',
-      recipientEmail: '',
+      ...prefilled(),
 
       bindWorker(fn) {
         clearWorker = fn
@@ -275,7 +285,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM, pdf: null, whatsappNumber: '', recipientEmail: '' })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM, pdf: null, ...prefilled() })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

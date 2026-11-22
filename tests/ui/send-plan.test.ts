@@ -8,10 +8,10 @@ const canShare = { share: async () => {}, canShare: () => true }
 
 describe('planSend', () => {
   it('desktop without Web Share: no share row, others open, WhatsApp Web, mail program', () => {
-    expect(planSend(desktop, file)).toEqual({ share: false, whatsapp: 'web', mailProgram: true, dragHint: true, othersOpen: true })
+    expect(planSend(desktop, file)).toEqual({ share: false, whatsapp: 'web', mailProgram: true, othersOpen: true })
   })
   it('phone with Web Share: share row, others closed, wa.me', () => {
-    expect(planSend({ ...phone, ...canShare }, file)).toEqual({ share: true, whatsapp: 'wa.me', mailProgram: false, dragHint: false, othersOpen: false })
+    expect(planSend({ ...phone, ...canShare }, file)).toEqual({ share: true, whatsapp: 'wa.me', mailProgram: false, othersOpen: false })
   })
   it('compatible desktop gets the share row too', () => {
     const plan = planSend({ ...desktop, ...canShare }, file)
