@@ -37,6 +37,12 @@ describe('.github/workflows/deploy.yml', () => {
     expect(stepWith(checks, 'actions/upload-pages-artifact@v5')).toContain("matrix.engine == 'cardfit'")
   })
 
+  it('runs the e2e suite only once, on the published build', () => {
+    const checks = job('checks')
+    expect(stepWith(checks, 'npx playwright install --with-deps')).toContain("matrix.engine == 'cardfit'")
+    expect(stepWith(checks, 'npx playwright test')).toContain("matrix.engine == 'cardfit'")
+  })
+
   it('runs on push to main and on pull requests', () => {
     const on = topLevel('on')
     expect(on).toMatch(/^ {2}push:\n {4}branches: \[main\]$/m)

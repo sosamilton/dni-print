@@ -40,7 +40,10 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # The e2e suite runs once, on the build that gets published (cardfit); the other engines still
+      # get lint, unit tests, build and every dist/ check.
       - name: Instalar navegadores de Playwright
+        if: matrix.engine == 'cardfit'
         run: npx playwright install --with-deps
 
       - name: Lint
@@ -67,6 +70,7 @@ jobs:
 
       - name: Guardia de red (e2e)
         id: e2e
+        if: matrix.engine == 'cardfit'
         run: npx playwright test
 
       - name: Subir reporte de Playwright
