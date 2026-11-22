@@ -2,8 +2,8 @@
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 import { defaultQuad, DEFAULT_PROFILE_ID, FACE_FILTERS, getProfile, MAX_WATERMARK_CHARS } from '../core/index.ts'
-import { parsePrefs, PREFS_KEY } from './preferences.ts'
-import { clampMargin, DEFAULT_MARGIN_MM } from './print-step-model.ts'
+import { readPrefs } from './preferences-store.ts'
+import { clampMargin } from './print-step-model.ts'
 import type { FaceFilter, Quad, Rotation } from '../core/index.ts'
 import type { BitmapLike, FaceId, Size } from '../worker/api.ts'
 
@@ -26,13 +26,17 @@ export interface FaceState {
   sharpness: number | null
 }
 
-/** Valid WhatsApp / mail preferences, read from localStorage; empty when unavailable. */
-function prefilled(): { whatsappNumber: string; recipientEmail: string } {
-  try {
-    const prefs = parsePrefs(globalThis.localStorage?.getItem(PREFS_KEY))
-    return { whatsappNumber: prefs.whatsapp, recipientEmail: prefs.email }
-  } catch {
-    return { whatsappNumber: '', recipientEmail: '' }
+/** Initial values of a session: the saved preferences, or the defaults when storage is unavailable. */
+function initialValues() {
+  const prefs = readPrefs()
+  return {
+    copies: prefs.copies,
+    filter: prefs.filter,
+    watermarkOn: prefs.watermark !== '',
+    watermarkText: prefs.watermark,
+    marginMm: prefs.marginMm,
+    whatsappNumber: prefs.whatsapp,
+    recipientEmail: prefs.email,
   }
 }
 
@@ -133,13 +137,8 @@ export function createSessionStore(deps: SessionDeps) {
       profileId: DEFAULT_PROFILE_ID,
       faces: {},
       blobUrls: [],
-      copies: 2,
-      filter: 'color',
-      watermarkOn: false,
-      watermarkText: '',
-      marginMm: DEFAULT_MARGIN_MM,
       pdf: null,
-      ...prefilled(),
+      ...initialValues(),
 
       bindWorker(fn) {
         clearWorker = fn
@@ -285,7 +284,7 @@ export function createSessionStore(deps: SessionDeps) {
           face.previewBitmap.close()
           face.rendered?.close()
         }
-        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, copies: 2, filter: 'color', watermarkOn: false, watermarkText: '', marginMm: DEFAULT_MARGIN_MM, pdf: null, ...prefilled() })
+        set({ faces: {}, blobUrls: [], profileId: DEFAULT_PROFILE_ID, pdf: null, ...initialValues() })
         try {
           void Promise.resolve(clearWorker?.()).catch(() => {})
         } catch {

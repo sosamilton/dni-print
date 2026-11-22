@@ -20,6 +20,7 @@ import { pdfInputsKey, sheetLayout } from './print-step-model.ts'
 import { gmailUrl, mailtoUrl, validateEmail } from './send-links.ts'
 import { planOutput, planSend, whatsappLink, type OutputOption, type OutputPlan, type SendPlan } from './send-plan.ts'
 import { sessionStore, useSession } from './session-store.ts'
+import { readPrefs } from './preferences-store.ts'
 import { currentShareNavigator, pdfFile, pdfFileName, sharePdf } from './share-pdf.ts'
 import { strings } from './strings.es.ts'
 import { useWideLayout } from './use-wide-layout.ts'
@@ -143,7 +144,7 @@ export function OutputPanel({ sheetOpen, onSheetClose, returnFocusRef, onRestart
   }
 
   const content = (
-    <OutputOptions key={round} build={build} wide={wide} defaultAction={defaultAction} onRestart={restart} />
+    <OutputOptions key={round} build={build} wide={wide} defaultAction={defaultAction ?? (readPrefs().defaultAction || undefined)} onRestart={restart} />
   )
 
   if (wide) {

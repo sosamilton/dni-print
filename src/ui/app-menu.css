@@ -331,3 +331,81 @@
   outline: var(--focus-ring-width) solid var(--color-ink-primary);
   outline-offset: calc(var(--hairline) * 2);
 }
+
+.prefs-dialog {
+  max-height: calc(100% - 2 * var(--margin-mobile));
+  overflow-y: auto;
+}
+
+.prefs-form {
+  display: block;
+}
+
+.prefs-field {
+  display: block;
+  margin: var(--spacing-4) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.prefs-field > legend,
+.prefs-field > span:first-child {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  padding: 0;
+}
+
+.prefs-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.prefs-option,
+.prefs-secondary,
+.prefs-erase {
+  min-height: var(--button-min-height);
+  padding: var(--button-padding);
+  border: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.prefs-option[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-surface-raised);
+}
+
+.prefs-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--button-min-height);
+  padding: 0 var(--spacing-3);
+  border: var(--hairline) solid var(--color-border-hairline);
+  border-radius: var(--rounded-md);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-primary);
+  font: inherit;
+}
+
+.prefs-error {
+  display: block;
+  margin-top: var(--spacing-1);
+  color: var(--color-danger);
+}
+
+.prefs-erase,
+.prefs-secondary {
+  display: block;
+  width: 100%;
+  margin-top: var(--spacing-3);
+}
+
+.prefs-erase {
+  color: var(--color-danger);
+}

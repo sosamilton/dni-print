@@ -65,27 +65,27 @@ export interface MenuAvailability {
   hasSourceCode: boolean
 }
 
-export type MenuItemId = 'theme' | 'share' | 'install' | 'privacy' | 'sourceCode' | 'sourceCodeUnavailable' | 'restart'
+export type MenuItemId = 'theme' | 'share' | 'install' | 'preferences' | 'privacy' | 'sourceCode' | 'sourceCodeUnavailable' | 'restart'
 
 function sourceCodeId(a: MenuAvailability): MenuItemId {
   return a.hasSourceCode ? 'sourceCode' : 'sourceCodeUnavailable'
 }
 
 /**
- * Bottom sheet (< 900px), in contract order: (1) Tema; (2) Compartir, Instalar; (3) Cómo funciona, Código fuente;
- * (4) Empezar de nuevo. Empty groups are dropped. Preferencias arrives with story 9-6.
+ * Bottom sheet (< 900px), in contract order: (1) Tema; (2) Compartir, Instalar, Preferencias; (3) Cómo funciona, Código fuente;
+ * (4) Empezar de nuevo. Empty groups are dropped.
  */
 export function sheetGroups(a: MenuAvailability): MenuItemId[][] {
   const groups: MenuItemId[][] = [
     ['theme'],
-    a.installable ? ['share', 'install'] : ['share'],
+    a.installable ? ['share', 'install', 'preferences'] : ['share', 'preferences'],
     ['privacy', sourceCodeId(a)],
     a.canRestart ? ['restart'] : [],
   ]
   return groups.filter((group) => group.length > 0)
 }
 
-/** Desktop ⋯ list: Instalar (if offered), Código fuente and, last and set apart, Empezar de nuevo. */
+/** Desktop ⋯ list: Preferencias, Instalar (if offered), Código fuente and, last and set apart, Empezar de nuevo. */
 export function moreItems(a: MenuAvailability): MenuItemId[] {
-  return [...(a.installable ? ['install' as const] : []), sourceCodeId(a), ...(a.canRestart ? ['restart' as const] : [])]
+  return ['preferences' as const, ...(a.installable ? ['install' as const] : []), sourceCodeId(a), ...(a.canRestart ? ['restart' as const] : [])]
 }

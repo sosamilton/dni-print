@@ -34,7 +34,7 @@ test('escritorio: ⋯ ofrece "Instalar la app" solo tras beforeinstallprompt y l
   await expect.poll(() => prompted(page)).toBe(1)
 })
 
-test('escritorio: la barra muestra Cómo funciona, Compartir la app, tema y ⋯ con Código fuente y Empezar de nuevo, sin Preferencias', async ({
+test('escritorio: la barra muestra Cómo funciona, Compartir la app, tema y ⋯ con Preferencias, Código fuente y Empezar de nuevo', async ({
   page,
 }) => {
   await page.goto('./')
@@ -44,11 +44,11 @@ test('escritorio: la barra muestra Cómo funciona, Compartir la app, tema y ⋯ 
   await expect(bar.getByRole('button', { name: menu.bar.theme, exact: true })).toBeVisible()
   await bar.getByRole('button', { name: menu.buttonLabel }).click()
   const list = bar.getByRole('list')
+  await expect(list.getByText(menu.preferences)).toBeVisible()
   await expect(list.getByText(menu.sourceCode)).toBeVisible()
   const restart = list.getByRole('button', { name: menu.restart })
   await expect(restart).toBeVisible()
   await expect(list.getByRole('listitem').last()).toContainText(menu.restart)
-  await expect(page.getByText('Preferencias')).toHaveCount(0)
   // No bottom sheet on desktop.
   await expect(page.locator('dialog.menu-sheet')).toHaveCount(0)
 })
@@ -56,7 +56,7 @@ test('escritorio: la barra muestra Cómo funciona, Compartir la app, tema y ⋯ 
 test.describe('celular', () => {
   test.use({ viewport: PHONE })
 
-  test('⋮ abre una hoja con los grupos en orden, sin Preferencias, y Empezar de nuevo último, en rojo y con nota', async ({
+  test('⋮ abre una hoja con los grupos en orden, con Preferencias, y Empezar de nuevo último, en rojo y con nota', async ({
     page,
   }) => {
     await page.goto('./')
@@ -64,12 +64,12 @@ test.describe('celular', () => {
     await page.getByRole('button', { name: menu.buttonLabel }).click()
     const sheet = page.getByRole('dialog', { name: menu.sheetTitle })
     await expect(sheet).toBeVisible()
-    await expect(page.getByText('Preferencias')).toHaveCount(0)
 
     const groups = sheet.locator('.menu-sheet-group')
     await expect(groups).toHaveCount(4)
     await expect(groups.nth(0).getByRole('group', { name: menu.theme.label })).toBeVisible()
     await expect(groups.nth(1)).toContainText(menu.shareApp)
+    await expect(groups.nth(1)).toContainText(menu.preferences)
     await expect(groups.nth(1)).not.toContainText(menu.install)
     await expect(groups.nth(2)).toContainText(menu.privacy)
     await expect(groups.nth(2)).toContainText(menu.sourceCode)

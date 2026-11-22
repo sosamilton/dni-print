@@ -91,24 +91,24 @@ describe('breakpoint parity', () => {
 describe('menu items', () => {
   const all = { installable: true, canRestart: true, hasSourceCode: true }
 
-  it('sheet: four groups in contract order, never Preferencias', () => {
-    expect(sheetGroups(all)).toEqual([['theme'], ['share', 'install'], ['privacy', 'sourceCode'], ['restart']])
+  it('sheet: four groups in contract order, Preferencias after Instalar', () => {
+    expect(sheetGroups(all)).toEqual([['theme'], ['share', 'install', 'preferences'], ['privacy', 'sourceCode'], ['restart']])
   })
 
-  it('desktop ⋯: Instalar, Código fuente and Empezar de nuevo last', () => {
-    expect(moreItems(all)).toEqual(['install', 'sourceCode', 'restart'])
+  it('desktop ⋯: Preferencias, Instalar, Código fuente and Empezar de nuevo last', () => {
+    expect(moreItems(all)).toEqual(['preferences', 'install', 'sourceCode', 'restart'])
   })
 
   it('without onRestart there is no Empezar de nuevo group or item', () => {
     const a = { ...all, canRestart: false }
-    expect(sheetGroups(a)).toEqual([['theme'], ['share', 'install'], ['privacy', 'sourceCode']])
-    expect(moreItems(a)).toEqual(['install', 'sourceCode'])
+    expect(sheetGroups(a)).toEqual([['theme'], ['share', 'install', 'preferences'], ['privacy', 'sourceCode']])
+    expect(moreItems(a)).toEqual(['preferences', 'install', 'sourceCode'])
   })
 
   it('when not installable there is no Instalar la app', () => {
     const a = { ...all, installable: false }
-    expect(sheetGroups(a)[1]).toEqual(['share'])
-    expect(moreItems(a)).toEqual(['sourceCode', 'restart'])
+    expect(sheetGroups(a)[1]).toEqual(['share', 'preferences'])
+    expect(moreItems(a)).toEqual(['preferences', 'sourceCode', 'restart'])
   })
 
   it('without a repo URL Código fuente is the disabled variant', () => {

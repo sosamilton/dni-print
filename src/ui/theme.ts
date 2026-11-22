@@ -7,6 +7,8 @@ export interface ThemeStore {
   setChoice(choice: ThemeChoice): void
   /** Re-applies the current choice to the document (idempotent; `theme-boot.js` normally did it already). */
   init(): void
+  /** Re-reads the stored choice (after the preferences were saved or erased) and applies it. */
+  reload(): void
 }
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
@@ -55,6 +57,11 @@ export function createThemeStore(doc: Document | null, getStorage: () => Storage
     },
     init() {
       if (doc) applyTheme(doc, choice)
+    },
+    reload() {
+      choice = parsePrefs(readRaw(getStorage)).theme
+      if (doc) applyTheme(doc, choice)
+      listeners.forEach((listener) => listener())
     },
     setChoice(next) {
       choice = next

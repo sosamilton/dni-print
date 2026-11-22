@@ -8,6 +8,25 @@ import { fakeBitmap } from '../worker/fake-imaging.ts'
 const size = { widthPx: 800, heightPx: 600 }
 
 describe('session store', () => {
+  it('clearSession reapplies the saved preferences', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => '{"v":1,"copies":1,"filter":"bn","marginMm":15,"watermark":"X"}',
+    })
+    try {
+      const s = createSessionStore({ revokeUrl: () => {} })
+      const expected = { copies: 1, filter: 'bn', marginMm: 15, watermarkText: 'X', watermarkOn: true }
+      expect(s.getState()).toMatchObject(expected)
+      s.getState().setCopies(2)
+      s.getState().setMarginMm(5)
+      s.getState().setWatermarkText('')
+      s.getState().setWatermarkOn(false)
+      s.getState().clearSession()
+      expect(s.getState()).toMatchObject(expected)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('setDetectedQuad marks auto; resetQuad returns to it, else to default', () => {
     const s = createSessionStore({ revokeUrl: () => {} })
     s.getState().setFace('front', { sourceSize: size, previewBitmap: fakeBitmap(1, 1) })

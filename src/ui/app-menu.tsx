@@ -23,6 +23,7 @@ import {
   type MenuAvailability,
   type MenuItemId,
 } from './menu-model.ts'
+import { PreferencesDialog } from './preferences-dialog.tsx'
 import { PrivacyDialog } from './privacy-dialog.tsx'
 import { appShareUrl, appWhatsappLink, shareApp } from './share-app.ts'
 import { currentSourceCodeUrl } from './source-link.ts'
@@ -92,6 +93,7 @@ function ShareNote({ note, onLink }: { note: 'copied' | 'failed'; onLink: () => 
 function MobileMenu({ onRestart }: MenuProps) {
   const [open, setOpen] = useState(false)
   const [privacyOpen, setPrivacyOpen] = useState(false)
+  const [prefsOpen, setPrefsOpen] = useState(false)
   const toggleRef = useRef(null as HTMLButtonElement | null)
   const sheetRef = useRef(null as HTMLDialogElement | null)
   const restoreFocus = useRef(true)
@@ -161,6 +163,21 @@ function MobileMenu({ onRestart }: MenuProps) {
               void installPrompt.install()
             }}
           />
+        )
+      }
+      case 'preferences': {
+        return (
+          <button
+            type="button"
+            className="app-menu-item"
+            onClick={() => {
+              restoreFocus.current = false
+              close()
+              setPrefsOpen(true)
+            }}
+          >
+            <ItemContent icon="prefs" label={strings.menu.preferences} />
+          </button>
         )
       }
       case 'privacy': {
@@ -237,6 +254,13 @@ function MobileMenu({ onRestart }: MenuProps) {
           toggleRef.current?.focus()
         }}
       />
+      <PreferencesDialog
+        open={prefsOpen}
+        onClose={() => {
+          setPrefsOpen(false)
+          toggleRef.current?.focus()
+        }}
+      />
     </div>
   )
 }
@@ -245,6 +269,7 @@ function MobileMenu({ onRestart }: MenuProps) {
 function DesktopBar({ onRestart }: MenuProps) {
   const [moreOpen, setMoreOpen] = useState(false)
   const [privacyOpen, setPrivacyOpen] = useState(false)
+  const [prefsOpen, setPrefsOpen] = useState(false)
   const moreRef = useRef(null as HTMLDivElement | null)
   const moreToggleRef = useRef(null as HTMLButtonElement | null)
   const privacyRef = useRef(null as HTMLButtonElement | null)
@@ -324,6 +349,22 @@ function DesktopBar({ onRestart }: MenuProps) {
                 </li>
               )
             }
+            if (id === 'preferences') {
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    className="app-menu-item"
+                    onClick={() => {
+                      setMoreOpen(false)
+                      setPrefsOpen(true)
+                    }}
+                  >
+                    <ItemContent icon="prefs" label={strings.menu.preferences} />
+                  </button>
+                </li>
+              )
+            }
             if (id === 'restart') {
               return (
                 <li key={id} className="app-menu-separated">
@@ -349,6 +390,13 @@ function DesktopBar({ onRestart }: MenuProps) {
         onClose={() => {
           setPrivacyOpen(false)
           privacyRef.current?.focus()
+        }}
+      />
+      <PreferencesDialog
+        open={prefsOpen}
+        onClose={() => {
+          setPrefsOpen(false)
+          moreToggleRef.current?.focus()
         }}
       />
     </div>
@@ -484,6 +532,7 @@ const ICONS = {
   install: 'M12 3v12M7 10l5 5 5-5M5 21h14',
   info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16v-5M12 8h.01',
   code: 'M8 7l-5 5 5 5M16 7l5 5-5 5',
+  prefs: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
   restart: 'M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4',
 } as const
 

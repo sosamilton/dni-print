@@ -5,7 +5,16 @@ describe('preferences', () => {
   it('uses a versioned key', () => {
     expect(PREFS_KEY).toBe('dni-print:prefs')
     expect(PREFS_VERSION).toBe(1)
-    expect(DEFAULT_PREFS).toEqual({ theme: 'system', whatsapp: '', email: '' })
+    expect(DEFAULT_PREFS).toEqual({
+      theme: 'system',
+      whatsapp: '',
+      email: '',
+      defaultAction: '',
+      copies: 2,
+      filter: 'color',
+      marginMm: 10,
+      watermark: '',
+    })
   })
 
   it.each([
@@ -46,7 +55,7 @@ describe('preferences', () => {
 
   it('keeps a valid whatsapp and email, and drops invalid ones', () => {
     const ok = parsePrefs('{"v":1,"whatsapp":"011 15 2345-6789","email":"a@b.com"}')
-    expect(ok).toEqual({ theme: 'system', whatsapp: '011 15 2345-6789', email: 'a@b.com' })
+    expect(ok).toEqual({ ...DEFAULT_PREFS, whatsapp: '011 15 2345-6789', email: 'a@b.com' })
     expect(parsePrefs('{"v":1,"whatsapp":"123","email":"mal"}')).toEqual(DEFAULT_PREFS)
     expect(parsePrefs('{"v":1,"whatsapp":5,"email":null}')).toEqual(DEFAULT_PREFS)
     expect(parsePrefs(serializePrefs(ok))).toEqual(ok)
@@ -58,5 +67,20 @@ describe('preferences', () => {
     const prefs = withTheme(DEFAULT_PREFS, 'dark')
     expect(DEFAULT_PREFS.theme).toBe('system')
     expect(prefs.theme).toBe('dark')
+  })
+
+  it('reads the new fields and discards invalid ones', () => {
+    const raw = '{"v":1,"defaultAction":"print","copies":1,"filter":"bn","marginMm":15,"watermark":" COPIA "}'
+    expect(parsePrefs(raw)).toEqual({ ...DEFAULT_PREFS, defaultAction: 'print', copies: 1, filter: 'bn', marginMm: 15, watermark: 'COPIA' })
+    expect(parsePrefs('{"v":1,"copies":5,"marginMm":99,"filter":"x","defaultAction":"y","watermark":7}')).toEqual(DEFAULT_PREFS)
+    expect(parsePrefs(`{"v":1,"watermark":"${'a'.repeat(41)}"}`).watermark).toBe('')
+    expect(parsePrefs('{"v":1,"marginMm":10.5}').marginMm).toBe(10)
+  })
+
+  it('serializes only non-default values and round-trips', () => {
+    const prefs = { ...DEFAULT_PREFS, defaultAction: 'save' as const, copies: 1 as const, filter: 'ahorro' as const, marginMm: 15, watermark: 'COPIA' }
+    expect(parsePrefs(serializePrefs(prefs))).toEqual(prefs)
+    expect(serializePrefs({ ...DEFAULT_PREFS, copies: 2, marginMm: 10 })).toBeNull()
+    expect(serializePrefs({ ...DEFAULT_PREFS, marginMm: 99 })).toBeNull()
   })
 })
